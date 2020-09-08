@@ -101,8 +101,14 @@ boot_alloc(uint32_t n)
 	// nextfree.  Make sure nextfree is kept aligned
 	// to a multiple of PGSIZE.
 	//
-	
-	return NULL;
+	// TODO check if we go over memory region
+	// do we use result and are char * the same as void *
+	result = nextfree;
+	nextfree = ROUNDUP(nextfree + n, PGSIZE);	
+	if (npages * PGSIZE < PADDR(nextfree)) {
+		panic("boot alloc has run out of memory");
+	}
+	return result;
 }
 
 // Set up a two-level page table:
@@ -122,9 +128,6 @@ mem_init(void)
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
-
-	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -253,9 +256,9 @@ page_init(void)
 	// free pages!
 	size_t i;
 	for (i = 0; i < npages; i++) {
-		physaddr_t pa = page2pa(pages[i]);
+		physaddr_t pa = page2pa(&pages[i]);
 		void * va = KADDR(pa);
-		if (i == 0 || (pa > IOPHYSMEM && va < boot_alloc(0))) {
+		if (i == 0 || (pa >= IOPHYSMEM && va < boot_alloc(0))) {
 			pages[i].pp_ref = 1;
 			
 		} else {
@@ -284,16 +287,14 @@ page_alloc(int alloc_flags)
 {
 	if (!page_free_list) {
 		return NULL;
-	} else {
-		struct PageInfo * pp = page_free_list;
-		page_free_list = pp.pp_link;
-		if (alloc_flags & ALLOC_ZERO) {
-			memset(page2kva(pp), 0, PGSIZE);
-		}
-		pp.pp_link = NULL;
-		return pp;
+	} 
+	struct PageInfo * pp = page_free_list;
+	page_free_list = pp->pp_link;
+	if (alloc_flags & ALLOC_ZERO) {
+		memset(page2kva(pp), 0, PGSIZE);
 	}
-	return 0;
+	pp->pp_link = NULL;
+	return pp;
 }
 
 //
@@ -306,6 +307,14 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	if (pp->pp_ref) {
+		panic("The page you are trying to free had a nonzero reference count");
+	}
+	if (pp->pp_link) {
+		panic("The page you are trying to free points to a non-null value");
+	}		
+	pp->pp_link = page_free_list;
+	page_free_list = pp;
 }
 
 //
@@ -344,7 +353,7 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	// Fill this function in
+	if (pdir
 	return NULL;
 }
 
