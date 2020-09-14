@@ -353,8 +353,21 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	if (pdir
-	return NULL;
+	pde_t* pde;
+	pte_t* pgtab;
+	pde = &pgdir[PDX(va)];
+	if (*pde & PTE_P) {
+		pgtab = (pte_t*)KADDR(PTE_ADDR(*pde));
+	} else {
+		// We put a physical address into *pde
+		// pgtab stays as a virtual address
+		// TODO: get correct flags for page_alloc parameter
+		if (!create || (pgtab = (pte_t*) page2kva(page_alloc(0))) == 0)
+			return 0;
+		memset(pgtab, 0, PGSIZE);
+		*pde = PADDR(pgtab) | PTE_P | PTE_W | PTE_U;
+	}
+	return &pgtab[PTX(va)];
 }
 
 //
