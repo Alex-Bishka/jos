@@ -361,7 +361,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	} else {
 		// We put a physical address into *pde
 		// pgtab stays as a virtual address
-		// TODO: get correct flags for page_alloc parameter
+		// TODO: get correct flags for piage_alloc parameter
 		if (!create || (pgtab = (pte_t*) page2kva(page_alloc(0))) == 0)
 			return 0;
 		memset(pgtab, 0, PGSIZE);
@@ -384,7 +384,11 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	// Fill this function in
+	for ( ; pa < pa + size; pa += PGSIZE) {
+		pte_t *pte = pgdir_walk(pgdir, (const void *) va, 1); 
+		pte = (pte_t *) (pa | perm | PTE_P);
+		va += PGSIZE;
+	}	
 }
 
 //
@@ -415,7 +419,16 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
-	// Fill this function in
+	pte_t *pte;
+	if((pte = pgdir_walk(pgdir, va, 1)) == 0) {
+		return -E_NO_MEM;
+	}
+	if (*pte & PTE_P) {
+		page_remove(pgdir, va);
+	}
+	physaddr_t pa = page2pa(pp);
+	pte = (pte_t *) (pa | perm | PTE_P);
+	pp->pp_ref++;
 	return 0;
 }
 
@@ -433,8 +446,14 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
-	// Fill this function in
-	return NULL;
+	pte_t *pte;
+	if (!(pte = pgdir_walk(pgdir, va, 0))) {
+		return NULL;
+	}
+	if (pte_store) {
+		*pte_store = pte;
+	}
+	return pa2page((physaddr_t) *pte);
 }
 
 //
@@ -455,7 +474,11 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 void
 page_remove(pde_t *pgdir, void *va)
 {
-	// Fill this function in
+	pte_t **pte_store; // what is this set to?
+	struct PageInfo * pp = page_lookup(pgdir, va, pte_store);
+	page_decref(pp);
+	**pte_store = 0;
+	tlb_invalidate(pgdir, va);
 }
 
 //
