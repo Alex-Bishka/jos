@@ -365,6 +365,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 		if (!create || (pp = page_alloc(ALLOC_ZERO)) == 0) {
 			return 0;
 		}
+		pp->pp_ref++;
 		pgtab = (pte_t*) page2kva(pp);
 		*pde = PADDR(pgtab) | PTE_P | PTE_W | PTE_U;
 	}
@@ -726,28 +727,23 @@ check_page(void)
 	assert((pp1 = page_alloc(0)));
 	assert((pp2 = page_alloc(0)));
 
-	cprintf("We made it to 1\n");
 	assert(pp0);
 	assert(pp1 && pp1 != pp0);
 	assert(pp2 && pp2 != pp1 && pp2 != pp0);
 
-	cprintf("We made it to 1\n");
 	// temporarily steal the rest of the free pages
 	fl = page_free_list;
 	page_free_list = 0;
 
-	cprintf("We made it to 1\n");
 	// should be no free memory
 	assert(!page_alloc(0));
 
 	// there is no page allocated at address 0
 	assert(page_lookup(kern_pgdir, (void *) 0x0, &ptep) == NULL);
 
-	cprintf("We made it to 1\n");
 	// there is no free memory, so we can't allocate a page table
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0);
 
-	cprintf("We made it to 1\n");
 
 	// free pp0 and try again: pp0 should be used for page table
 	page_free(pp0);
@@ -757,7 +753,6 @@ check_page(void)
 	assert(pp1->pp_ref == 1);
 	assert(pp0->pp_ref == 1);
 
-	cprintf("We made it to 1\n");
 	// should be able to map pp2 at PGSIZE because pp0 is already allocated for page table
 	assert(page_insert(kern_pgdir, pp2, (void*) PGSIZE, PTE_W) == 0);
 	assert(check_va2pa(kern_pgdir, PGSIZE) == page2pa(pp2));
@@ -771,7 +766,6 @@ check_page(void)
 	assert(check_va2pa(kern_pgdir, PGSIZE) == page2pa(pp2));
 	assert(pp2->pp_ref == 1);
 
-	cprintf("We made it to 1\n");
 	// pp2 should NOT be on the free list
 	// could happen in ref counts are handled sloppily in page_insert
 	assert(!page_alloc(0));
@@ -791,7 +785,6 @@ check_page(void)
 	assert(page_insert(kern_pgdir, pp2, (void*) PGSIZE, PTE_W) == 0);
 	assert(*pgdir_walk(kern_pgdir, (void*) PGSIZE, 0) & PTE_W);
 	assert(!(*pgdir_walk(kern_pgdir, (void*) PGSIZE, 0) & PTE_U));
-	cprintf("We made it to 1\n");
 
 	// should not be able to map at PTSIZE because need free page for page table
 	assert(page_insert(kern_pgdir, pp0, (void*) PTSIZE, PTE_W) < 0);
@@ -809,7 +802,6 @@ check_page(void)
 
 	// pp2 should be returned by page_alloc
 	assert((pp = page_alloc(0)) && pp == pp2);
-	cprintf("We made it to 1\n");
 
 	// unmapping pp1 at 0 should keep pp1 at PGSIZE
 	page_remove(kern_pgdir, 0x0);
@@ -836,7 +828,6 @@ check_page(void)
 	// should be no free memory
 	assert(!page_alloc(0));
 
-	cprintf("We made it to 1\n");
 	// forcibly take pp0 back
 	assert(PTE_ADDR(kern_pgdir[0]) == page2pa(pp0));
 	kern_pgdir[0] = 0;
