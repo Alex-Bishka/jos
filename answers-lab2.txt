@@ -1,0 +1,7 @@
+
+Question 1 - 
+We know that value is a pointer to a char, and that it can be dereferenced and
+assigned a value. Therefore, value must be a virtual address. Therefore, it
+makes the most sense to cast that pointer to a virtual address.
+
+
