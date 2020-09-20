@@ -278,6 +278,24 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	
+	void* end = ROUNDUP(va + len);
+	va = ROUNDDOWN(va, PGSIZE);
+	for (; va < end; va += PGSIZE) {
+		pte_t* pte;
+		if (pte = pgdir_walk(e->env_pgdir, va, 1) == 0) {
+			panic("pgdir_walk failed in region_alloc");
+		}
+		if !(*pte & PTE_P) {
+			struct PageInfo* pp;
+			if ((pp = page_alloc(0)) == NULL) {
+				panic("failed to allocate new page in region_alloc");
+			}
+			if (page_insert(e->env_pgdir, pp, initialized, PTE_W | PTE_U | PTE_P) != 0) {
+				panic("failed to insert new page in region_alloc");
+			}
+		}
+	}
 }
 
 //
@@ -333,7 +351,24 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  to make sure that the environment starts executing there.
 	//  What?  (See env_run() and env_pop_tf() below.)
 
-	// LAB 3: Your code here.
+	struct Proghdr *ph, *eph;
+
+        // load each program segment (ignores ph flags)
+        ph = (struct Proghdr *) binary;
+        eph = ph + ELFHDR->e_phnum;
+        for (; ph < eph; ph++)
+                // p_pa is the load address of this segment (as well
+                // as the physical address)
+                readseg(ph->p_pa, ph->p_memsz, ph->p_offset);
+
+        // call the entry point from the ELF header
+        // note: does not return!
+        ((void (*)(void)) (ELFHDR->e_entry))();
+
+
+	struct Elf* 
+	for 
+	struct Proghdr* ph = (struct Proghdr*) binary;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
@@ -351,7 +386,10 @@ load_icode(struct Env *e, uint8_t *binary)
 void
 env_create(uint8_t *binary, enum EnvType type)
 {
-	// LAB 3: Your code here.
+	struct Env* env;
+	env_alloc(&env, 0);
+	env->env_type = type;
+	load_icode(env, binary);
 }
 
 //
@@ -459,14 +497,23 @@ env_run(struct Env *e)
 	// Step 2: Use env_pop_tf() to restore the environment's
 	//	   registers and drop into user mode in the
 	//	   environment.
-
+	
 	// Hint: This function loads the new environment's state from
 	//	e->env_tf.  Go back through the code you wrote above
 	//	and make sure you have set the relevant parts of
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
-	panic("env_run not yet implemented");
+	if (curenv) {
+		if (curenv->env_status == ENV_RUNNING) {
+			curenv->env_status = ENV_RUNNABLE;
+		}
+		curenv = e;
+		curenv->env_status = ENV_RUNNING;
+		curenv->env_runs++;
+		lcr3();
+	}
+	
+	env_pop_tf();
 }
 
