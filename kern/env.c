@@ -116,7 +116,7 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-	for (size_t i = NENV - 1; i >= 0, --i) {
+	for (size_t i = NENV - 1; i >= 0; --i) {
 		envs[i].env_status = ENV_FREE;
 		envs[i].env_id = 0;
 		envs[i].env_link = env_free_list;
@@ -374,8 +374,6 @@ env_free(struct Env *e)
 	cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
 
 	// Flush all mapped pages in the user portion of the address space
-	static_assert(UTOP % PTSIZE == 0);
-	for (pdeno = 0; pdeno < PDX(UTOP); pdeno++) {
 
 		// only look at mapped page tables
 		if (!(e->env_pgdir[pdeno] & PTE_P))
