@@ -185,11 +185,14 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
-	e->env_pgdir = (pde_t*) page2kva(p);
-	memset(e->env_pgdir, 0, PGSIZE);
-	boot_map_region(e->env_pgdir, UPAGES, npages*sizeof(*pages), PADDR(pages), PTE_U | PTE_P);
-	boot_map_region(e->env_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
-	boot_map_region(e->env_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
+	e->env_pgdir = kern_pgdir;
+	struct PageInfo* pp = pa2page(PADDR(e->env_pgdir));
+	pp->pp_ref++;
+	// e->env_pgdir = (pde_t*) page2kva(p);
+	// memset(e->env_pgdir, 0, PGSIZE);
+	// boot_map_region(e->env_pgdir, UPAGES, npages*sizeof(*pages), PADDR(pages), PTE_U | PTE_P);
+	// boot_map_region(e->env_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
+	// boot_map_region(e->env_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -279,19 +282,19 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
 	
-	void* end = ROUNDUP(va + len);
-	va = ROUNDDOWN(va, PGSIZE);
+	void* end = ROUNDUP(va + len, PGSIZE);
+	va = (void *) ROUNDDOWN(va, PGSIZE);
 	for (; va < end; va += PGSIZE) {
 		pte_t* pte;
-		if (pte = pgdir_walk(e->env_pgdir, va, 1) == 0) {
+		if ((pte = pgdir_walk(e->env_pgdir, va, 1)) == 0) {
 			panic("pgdir_walk failed in region_alloc");
 		}
-		if !(*pte & PTE_P) {
+		if (!(*pte & PTE_P)) {
 			struct PageInfo* pp;
 			if ((pp = page_alloc(0)) == NULL) {
 				panic("failed to allocate new page in region_alloc");
 			}
-			if (page_insert(e->env_pgdir, pp, initialized, PTE_W | PTE_U | PTE_P) != 0) {
+			if (page_insert(e->env_pgdir, pp, va, PTE_W | PTE_U | PTE_P) != 0) {
 				panic("failed to insert new page in region_alloc");
 			}
 		}
@@ -363,11 +366,11 @@ load_icode(struct Env *e, uint8_t *binary)
 
         // call the entry point from the ELF header
         // note: does not return!
-        ((void (*)(void)) (ELFHDR->e_entry))();
+        //((void (*)(void)) (ELFHDR->e_entry))();
 
 
-	struct Elf* 
-	for 
+	 
+	 
 	struct Proghdr* ph = (struct Proghdr*) binary;
 
 	// Now map one page for the program's initial stack
@@ -511,9 +514,9 @@ env_run(struct Env *e)
 		curenv = e;
 		curenv->env_status = ENV_RUNNING;
 		curenv->env_runs++;
-		lcr3();
+		lcr3(PADDR(e->env_pgdir));
 	}
 	
-	env_pop_tf();
+	env_pop_tf(e->env_tf);
 }
 
