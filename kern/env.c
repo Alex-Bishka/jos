@@ -349,36 +349,32 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  to make sure that the environment starts executing there.
 	//  What?  (See env_run() and env_pop_tf() below.)
 
-	struct Proghdr *ph, *eph;
-
-        // load each program segment (ignores ph flags)
-	struct Elf* elf = (struct Elf*) binary;
-	 if (ELFHDR->e_magic != ELF_MAGIC)                                                              48                 goto bad;                                                                              49                                                                                                        50         // load each program segment (ignores ph flags)                                                51         ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);  
-        ph = (struct Proghdr *) binary;
-        eph = ph + elf->e_phnum;
-	lcr3(e->env_pgdir);
-	e->env_tf.eip = elf->entry; 
-        for (; ph < eph; ph++)
-                region_alloc(e, ph->p_va, ph->p_memsz);
-		memmove(ph->p_va, binary + ph->p_offset, ph->p_filesz);
-		memset(ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->filesz);
-		
-		// p_pa is the load address of this segment (as well
-                // as the physical address)
-	lcr3(kern_pgdir);
-        // call the entry point from the ELF header
-        // note: does not return!
-        //((void (*)(void)) (ELFHDR->e_entry))();
-
-
-	 
-	 
-	struct Proghdr* ph = (struct Proghdr*) binary;
-
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	struct Proghdr *ph, *eph;
+	struct Elf* elf = (struct Elf*) binary;
+	if (elf->e_magic != ELF_MAGIC)                                                              
+		goto bad;         
+
+	ph = (struct Proghdr *) ((uint8_t *) elf + elf->e_phoff);  
+	eph = ph + elf->e_phnum;
+
+	lcr3(PADDR(e->env_pgdir));
+	e->env_tf.tf_eip = elf->e_entry; 
+	for (; ph < eph; ph++) {
+		region_alloc(e, (void*) ph->p_va, ph->p_memsz);
+		memmove((void*) ph->p_va, (void*) (binary + ph->p_offset), ph->p_filesz);
+		memset((void*) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
+	}
+	lcr3(PADDR(kern_pgdir));
+
+	bad:
+		outw(0x8A00, 0x8A00);
+		outw(0x8A00, 0x8E00);
+		while (1)
+			/* do nothing */;
 }
 
 //
@@ -510,16 +506,14 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	if (curenv) {
-		if (curenv->env_status == ENV_RUNNING) {
-			curenv->env_status = ENV_RUNNABLE;
-		}
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		curenv->env_status = ENV_RUNNABLE;
 	}
 	
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++;
 	lcr3(PADDR(e->env_pgdir));
-	env_pop_tf(e->env_tf);
+	env_pop_tf(&e->env_tf);
 }
 
