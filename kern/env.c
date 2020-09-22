@@ -351,12 +351,13 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
+	// do the mapping!
 
 	// LAB 3: Your code here.
 	struct Proghdr *ph, *eph;
 	struct Elf* elf = (struct Elf*) binary;
 	if (elf->e_magic != ELF_MAGIC)                                                              
-		goto bad;         
+		panic("elf should be magic");         
 
 	ph = (struct Proghdr *) ((uint8_t *) elf + elf->e_phoff);  
 	eph = ph + elf->e_phnum;
@@ -370,11 +371,6 @@ load_icode(struct Env *e, uint8_t *binary)
 	}
 	lcr3(PADDR(kern_pgdir));
 
-	bad:
-		outw(0x8A00, 0x8A00);
-		outw(0x8A00, 0x8E00);
-		while (1)
-			/* do nothing */;
 }
 
 //
@@ -514,6 +510,7 @@ env_run(struct Env *e)
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++;
 	lcr3(PADDR(e->env_pgdir));
+	cprintf("test");
 	env_pop_tf(&e->env_tf);
 }
 
