@@ -116,7 +116,7 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-	for (size_t i = NENV - 1; i >= 0; --i) {
+	for (int i = NENV - 1; i >= 0; --i) {
 		envs[i].env_status = ENV_FREE;
 		envs[i].env_id = 0;
 		envs[i].env_link = env_free_list;
@@ -185,14 +185,9 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
-	e->env_pgdir = kern_pgdir;
-	struct PageInfo* pp = pa2page(PADDR(e->env_pgdir));
-	pp->pp_ref++;
-	// e->env_pgdir = (pde_t*) page2kva(p);
-	// memset(e->env_pgdir, 0, PGSIZE);
-	// boot_map_region(e->env_pgdir, UPAGES, npages*sizeof(*pages), PADDR(pages), PTE_U | PTE_P);
-	// boot_map_region(e->env_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
-	// boot_map_region(e->env_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
+	e->env_pgdir = page2kva(p);
+	memmove(e->env_pgdir, kern_pgdir, PGSIZE);
+	p->pp_ref++;
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -357,13 +352,20 @@ load_icode(struct Env *e, uint8_t *binary)
 	struct Proghdr *ph, *eph;
 
         // load each program segment (ignores ph flags)
+	struct Elf* elf = (struct Elf*) binary;
+	 if (ELFHDR->e_magic != ELF_MAGIC)                                                              48                 goto bad;                                                                              49                                                                                                        50         // load each program segment (ignores ph flags)                                                51         ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);  
         ph = (struct Proghdr *) binary;
-        eph = ph + ELFHDR->e_phnum;
+        eph = ph + elf->e_phnum;
+	lcr3(e->env_pgdir);
+	e->env_tf.eip = elf->entry; 
         for (; ph < eph; ph++)
-                // p_pa is the load address of this segment (as well
+                region_alloc(e, ph->p_va, ph->p_memsz);
+		memmove(ph->p_va, binary + ph->p_offset, ph->p_filesz);
+		memset(ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->filesz);
+		
+		// p_pa is the load address of this segment (as well
                 // as the physical address)
-                readseg(ph->p_pa, ph->p_memsz, ph->p_offset);
-
+	lcr3(kern_pgdir);
         // call the entry point from the ELF header
         // note: does not return!
         //((void (*)(void)) (ELFHDR->e_entry))();
@@ -415,7 +417,8 @@ env_free(struct Env *e)
 	cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
 
 	// Flush all mapped pages in the user portion of the address space
-
+	static_assert(UTOP % PTSIZE == 0);
+	for (pdeno = 0; pdeno < PDX(UTOP); pdeno++) { 
 		// only look at mapped page tables
 		if (!(e->env_pgdir[pdeno] & PTE_P))
 			continue;
@@ -511,12 +514,12 @@ env_run(struct Env *e)
 		if (curenv->env_status == ENV_RUNNING) {
 			curenv->env_status = ENV_RUNNABLE;
 		}
-		curenv = e;
-		curenv->env_status = ENV_RUNNING;
-		curenv->env_runs++;
-		lcr3(PADDR(e->env_pgdir));
 	}
 	
+	curenv = e;
+	curenv->env_status = ENV_RUNNING;
+	curenv->env_runs++;
+	lcr3(PADDR(e->env_pgdir));
 	env_pop_tf(e->env_tf);
 }
 
