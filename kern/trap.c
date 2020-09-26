@@ -62,9 +62,18 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	extern struct Segdesc gdt[];
-
+	
 	// LAB 3: Your code here.
+	// trap_init should 
+	// 1) initialize the IDT with the addresses
+	// of these handlers - can probably get that from indexing 
+	// in the array above
+	
+	// how do I get the size of the exec array? do I care since
+	// there is a check? 
+	for (int i = 0; i < ARRAY_SIZE(excnames); ++i) {
+		idt[i] = &(trapname(i));		
+	}
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -144,6 +153,7 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
