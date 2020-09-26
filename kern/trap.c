@@ -69,11 +69,35 @@ trap_init(void)
 	// of these handlers - can probably get that from indexing 
 	// in the array above
 	
+	// DURING SETUP
+	// get address of function into IDT
+	// how to actually generate the traphandler functions?
+	//
+	// DURING ACTUAL TRAP
+	// IDT -> traphandler function -> _alltraps -> vall trap -> calls trapdispatch -> does things
+
 	// how do I get the size of the exec array? do I care since
 	// there is a check? 
-	for (int i = 0; i < ARRAY_SIZE(excnames); ++i) {
-		idt[i] = &(trapname(i));		
-	}
+	void DivideError();
+	idt[i] = &DivideError;
+	void NonMaskableInterrupt();
+	void Breakpoint();
+	void Overflow();
+	void BOUNDRangeExceeded();
+	void InvalidOpCode();
+	void DeviceNotAvailable();
+	void DoubleFault();
+	void CoprocessorSegmentOverrun();
+	void InvalidTSS();
+	void SegmentNotPresent();
+	void StackFault();
+	void GeneralProtection();
+	void PageFault();
+	void UnknownTrap();
+	void x87FPUFloatingPointError();
+	void AlignmentCheck();
+	void MachineCheck();
+	void SIMDFloatingPointException();
 
 	// Per-CPU setup 
 	trap_init_percpu();
