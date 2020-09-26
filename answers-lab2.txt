@@ -7,11 +7,15 @@ makes the most sense to cast that pointer to a virtual address.
 Question 2 - 
 The top 16th of the entires have been filled in. The highest base virtual
 address of these is 2^32 - 1 (0xffffffff) and the lowest is 0xf0000000. Each virtual address maps to 4MB of physical
-memory, this maps to the first 256 MB in physical memory, starting from 0. The
-rest of the table has been zeroed out. 
+memory, this maps to the first 256 MB in physical memory, starting from 0. 
+The virtual address space at UPAGES (0xEF000000) points to the array of pages that we are
+storing. 
+The virtual address space bracketed by KSTACKTOP-KSTACKSIZE and KSTACKTOP
+points to the kernel stack. In this case KSTACKSIZE is 8 pages. 
+The rest of the table has been zeroed out. 
 
 Question 3 -
-User programs can not read or write to the kern;'s memory because of
+User programs can not read or write to the kernel's memory because of
 protection bits. User programs can only access entries with the user bit.
 
 Question 4 -
@@ -21,7 +25,12 @@ MB because that is how much space the kernel has for physical memory.
 Question 5 -
 The overhead that would deal with physical memory mainly comes from the pages
 array, the page directory table and the page table. The page directory and the
-page table are each 4 KB (2^10 entires, each entry is 4 bytes).
+page table are each 4 KB (2^10 entries, each entry is 4 bytes). We can have
+1024 page tables and 1 page directory, for a total of 4100 KB. The pages
+array contains 2^10 structs, each containing a 4-byte pointer and a 2-byte
+integer. Since they have to be aligned, each struct uses up 8 bytes, for a
+total of 8 KB for the pages array. Therefore in total we require 4108 KB of
+overhead.
 
 Question 6 -
 We transition after we jump into the kernel. The point of this is to map the
