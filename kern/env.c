@@ -351,7 +351,6 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-	// do the mapping!
 
 	// LAB 3: Your code here.
 	struct Proghdr *ph, *eph;
@@ -369,6 +368,7 @@ load_icode(struct Env *e, uint8_t *binary)
 		memmove((void*) ph->p_va, (void*) (binary + ph->p_offset), ph->p_filesz);
 		memset((void*) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 	}
+	region_alloc(e, (void*) (USTACKTOP - PGSIZE), PGSIZE);
 	lcr3(PADDR(kern_pgdir));
 
 }
