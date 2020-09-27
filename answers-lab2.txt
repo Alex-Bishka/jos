@@ -26,10 +26,11 @@ Question 5 -
 The overhead that would deal with physical memory mainly comes from the pages
 array, the page directory table and the page table. The page directory and the
 page table are each 4 KB (2^10 entries, each entry is 4 bytes). We can have
-1024 page tables and 1 page directory, for a total of 4100 KB. The pages
+64 page tables and 1 page directory, for a total of 260 KB (each page table is
+stored in 1 page so we get 4 KB * 64 + 4 KB). The pages
 array contains 2^10 structs, each containing a 4-byte pointer and a 2-byte
 integer. Since they have to be aligned, each struct uses up 8 bytes, for a
-total of 8 KB for the pages array. Therefore in total we require 4108 KB of
+total of 8 KB for the pages array. Therefore in total we require 268 KB of
 overhead.
 
 Question 6 -
