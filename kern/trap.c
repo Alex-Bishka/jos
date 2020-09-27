@@ -62,7 +62,7 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	
+	extern struct Segdesc gdt[];	
 	// LAB 3: Your code here.
 	// trap_init should 
 	// 1) initialize the IDT with the addresses
@@ -76,28 +76,51 @@ trap_init(void)
 	// DURING ACTUAL TRAP
 	// IDT -> traphandler function -> _alltraps -> vall trap -> calls trapdispatch -> does things
 
-	// how do I get the size of the exec array? do I care since
-	// there is a check? 
+	// SETGATE(gate, istrap, sel, off, dpl) 
+	// 1 is exception and 0 is interrupt	
+	// sel: Code segment selector for interrupt/trap handler 
+	// - off: Offset in code segment for interrupt/trap handler 
+	
+	// unsigned sel = (unsigned) gdt[1].sd_base_15_0;
+	unsigned sel = 0;
 	void DivideError();
-	idt[i] = &DivideError;
+	SETGATE(idt[0], 1, sel, &DivideError, 0); 
 	void NonMaskableInterrupt();
+	SETGATE(idt[1], 0, sel, &NonMaskableInterrupt, 0); 
 	void Breakpoint();
+	SETGATE(idt[2], 0, sel, &Breakpoint, 0); 
 	void Overflow();
+	SETGATE(idt[3], 0, sel, &Overflow, 0); 
 	void BOUNDRangeExceeded();
+	SETGATE(idt[4], 0, sel, &BOUNDRangeExceeded, 0); 
 	void InvalidOpCode();
+	SETGATE(idt[5], 0, sel, &InvalidOpCode, 0); 
 	void DeviceNotAvailable();
+	SETGATE(idt[6], 0, sel, &DeviceNotAvailable, 0); 
 	void DoubleFault();
+	SETGATE(idt[7], 0, sel, &DoubleFault, 0); 
 	void CoprocessorSegmentOverrun();
+	SETGATE(idt[8], 0, sel, &CoprocessorSegmentOverrun, 0); 
 	void InvalidTSS();
+	SETGATE(idt[9], 0, sel, &InvalidTSS, 0); 
 	void SegmentNotPresent();
+	SETGATE(idt[10], 0, sel, &SegmentNotPresent, 0); 
 	void StackFault();
+	SETGATE(idt[11], 0, sel, &StackFault, 0); 
 	void GeneralProtection();
+	SETGATE(idt[12], 0, sel, &GeneralProtection, 0); 
 	void PageFault();
+	SETGATE(idt[13], 0, sel, &PageFault, 0); 
 	void UnknownTrap();
+	SETGATE(idt[14], 0, sel, &UnknownTrap, 0); 
 	void x87FPUFloatingPointError();
+	SETGATE(idt[15], 0, sel, &x87FPUFloatingPointError, 0); 
 	void AlignmentCheck();
+	SETGATE(idt[16], 0, sel, &AlignmentCheck, 0); 
 	void MachineCheck();
+	SETGATE(idt[17], 0, sel, &MachineCheck, 0); 
 	void SIMDFloatingPointException();
+	SETGATE(idt[18], 0, sel, &SIMDFloatingPointException, 0); 
 
 	// Per-CPU setup 
 	trap_init_percpu();

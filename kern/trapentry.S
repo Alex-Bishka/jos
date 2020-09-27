@@ -47,48 +47,47 @@
  * Lab 3: Your code here for generating entry points for the different traps.
  */
 
-TRAPHANDLER("DivideError", 0);
-TRAPHANDLER("NonMaskableInterrupt", 1);
-TRAPHANDLER("Breakpoint", 2);
-TRAPHANDLER("Overflow", 3);
-TRAPHANDLER("BOUNDRangeExceeded", 4);
-TRAPHANDLER("InvalidOpCode", 5);
-TRAPHANDLER("DeviceNotAvailable", 6);
-TRAPHANDLER("DoubleFault", 7);
-TRAPHANDLER("CoprocessorSegmentOverrun", 8);
-TRAPHANDLER("InvalidTSS", 9);
-TRAPHANDLER("SegmentNotPresent", 10);
-TRAPHANDLER("StackFault", 11);
-TRAPHANDLER("GeneralProtection", 12);
-TRAPHANDLER("PageFault", 13);
-TRAPHANDLER("UnknownTrap", 14);
-TRAPHANDLER("x87FPUFloatingPointError", 15);
-TRAPHANDLER("AlignmentCheck", 16);
-TRAPHANDLER("MachineCheck", 17);
-TRAPHANDLER("SIMDFloatingPointException", 18);
+TRAPHANDLER(DivideError, 0);
+TRAPHANDLER(NonMaskableInterrupt, 1);
+TRAPHANDLER(Breakpoint, 2);
+TRAPHANDLER(Overflow, 3);
+TRAPHANDLER(BOUNDRangeExceeded, 4);
+TRAPHANDLER(InvalidOpCode, 5);
+TRAPHANDLER(DeviceNotAvailable, 6);
+TRAPHANDLER(DoubleFault, 7);
+TRAPHANDLER(CoprocessorSegmentOverrun, 8);
+TRAPHANDLER(InvalidTSS, 9);
+TRAPHANDLER(SegmentNotPresent, 10);
+TRAPHANDLER(StackFault, 11);
+TRAPHANDLER(GeneralProtection, 12);
+TRAPHANDLER(PageFault, 13);
+TRAPHANDLER(UnknownTrap, 14);
+TRAPHANDLER(x87FPUFloatingPointError, 15);
+TRAPHANDLER(AlignmentCheck, 16);
+TRAPHANDLER(MachineCheck, 17);
+TRAPHANDLER(SIMDFloatingPointException, 18);
 
 /*
  * Lab 3: Your code here for _alltraps
  */
 
 _alltraps:
-	pop %ecx;
 	push 0;
 	push %ss;
 	push %esp;
-	pushl %eflags;
-	push tf_padding3;
+	pushf;
+	push 0;
 	push %cs;
-	push %eip;
+	push 4(%ebp);
 	pushl 0;
-	pushl %ecx
+	pushl 8(%ebp);
 	push 0;
 	push %ds;
 	push 0;
 	push %es;
 	pushal;
-	load GD_KD %ds;
-	load GD_KD %es;
+	mov GD_KD, %ds;
+	mov GD_KD, %es;
 	pushl %esp;
 	call trap;
 
