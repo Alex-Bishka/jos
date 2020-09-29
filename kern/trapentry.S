@@ -47,7 +47,7 @@
  * Lab 3: Your code here for generating entry points for the different traps.
  */
 
-TRAPHANDLER(DivideError, 0);
+TRAPHANDLER_NOEC(DivideError, 0);
 TRAPHANDLER(NonMaskableInterrupt, 1);
 TRAPHANDLER(Breakpoint, 2);
 TRAPHANDLER(Overflow, 3);
@@ -72,22 +72,12 @@ TRAPHANDLER(SIMDFloatingPointException, 18);
  */
 
 _alltraps:
-	push 0;
-	push %ss;
-	push %esp;
-	pushf;
-	push 0;
-	push %cs;
-	push 4(%ebp);
-	pushl 0;
-	pushl 8(%ebp);
-	push 0;
-	push %ds;
-	push 0;
-	push %es;
+	pushl %ds;
+	pushl %es;
 	pushal;
-	mov GD_KD, %ds;
-	mov GD_KD, %es;
+	pushl $GD_KD;
+	popl %ds;
+	pushl $GD_KD;
+	popl %es;
 	pushl %esp;
 	call trap;
-

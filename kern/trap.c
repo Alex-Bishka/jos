@@ -82,11 +82,11 @@ trap_init(void)
 	// - off: Offset in code segment for interrupt/trap handler 
 	
 	// unsigned sel = (unsigned) gdt[1].sd_base_15_0;
-	unsigned sel = 0;
+	unsigned sel = 8;
 	void DivideError();
-	SETGATE(idt[0], 1, sel, &DivideError, 0); 
+	SETGATE(idt[0], 0, sel, &DivideError, 0); 
 	void NonMaskableInterrupt();
-	SETGATE(idt[1], 0, sel, &NonMaskableInterrupt, 0); 
+	SETGATE(idt[1], 0, sel, NonMaskableInterrupt, 0); 
 	void Breakpoint();
 	SETGATE(idt[2], 0, sel, &Breakpoint, 0); 
 	void Overflow();
