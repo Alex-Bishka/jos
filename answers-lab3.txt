@@ -7,6 +7,5 @@ occurred. If we only had one handler, then we wouldn't be able to figure out
 what the original exception was for.
 
 2.
-Nope! It worked perfectly on our first try. (we'll come back to this after we
-clean up some stuff in trap.c).
-
+We get interrupt vector 13 because the user was trying to executre a protected
+instruction, so instead of a page fault, we get a general protection fault.

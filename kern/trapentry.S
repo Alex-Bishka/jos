@@ -59,13 +59,11 @@ TRAPHANDLER_NOEC(BOUNDRangeExceeded, T_BOUND);
 TRAPHANDLER_NOEC(InvalidOpCode, T_ILLOP);
 TRAPHANDLER_NOEC(DeviceNotAvailable, T_DEVICE);
 TRAPHANDLER(DoubleFault, T_DBLFLT);
-TRAPHANDLER_NOEC(CoprocessorSegmentOverrun, 9); // this is commented out, can we uncomment and use?
 TRAPHANDLER(InvalidTSS, T_TSS);
 TRAPHANDLER(SegmentNotPresent, T_SEGNP);
 TRAPHANDLER(StackFault, T_STACK);
 TRAPHANDLER(GeneralProtection, T_GPFLT);
 TRAPHANDLER(PageFault, T_PGFLT);
-TRAPHANDLER(UnknownTrap, 15); // is this the other reserved one?
 TRAPHANDLER_NOEC(x87FPUFloatingPointError, T_FPERR);
 TRAPHANDLER_NOEC(AlignmentCheck, T_ALIGN);
 TRAPHANDLER_NOEC(MachineCheck, T_MCHK);

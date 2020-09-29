@@ -89,7 +89,7 @@ trap_init(void)
 	SETGATE(idt[T_DIVIDE], isExcep, sel, &DivideError, dpl); 
 
 	void NonMaskableInterrupt();
-	SETGATE(idt[T_NMI], isExcep, sel, NonMaskableInterrupt, dpl); 
+	SETGATE(idt[T_NMI], isExcep, sel, &NonMaskableInterrupt, dpl); 
 
 	void Breakpoint();
 	SETGATE(idt[T_BRKPT], isExcep, sel, &Breakpoint, dpl); 
@@ -109,9 +109,6 @@ trap_init(void)
 	void DoubleFault();
 	SETGATE(idt[T_DBLFLT], isExcep, sel, &DoubleFault, dpl); 
 
-	void CoprocessorSegmentOverrun();
-	SETGATE(idt[9], isExcep, sel, &CoprocessorSegmentOverrun, dpl); 
-
 	void InvalidTSS();
 	SETGATE(idt[T_TSS], isExcep, sel, &InvalidTSS, dpl); 
 
@@ -126,9 +123,6 @@ trap_init(void)
 
 	void PageFault();
 	SETGATE(idt[T_PGFLT], isExcep, sel, &PageFault, dpl); 
-
-	void UnknownTrap();
-	SETGATE(idt[15], isExcep, sel, &UnknownTrap, dpl); 
 
 	void x87FPUFloatingPointError();
 	SETGATE(idt[T_FPERR], isExcep, sel, &x87FPUFloatingPointError, dpl); 
