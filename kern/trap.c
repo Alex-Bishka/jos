@@ -62,7 +62,6 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	extern struct Segdesc gdt[];	
 	// LAB 3: Your code here.
 	// trap_init should 
 	// 1) initialize the IDT with the addresses
@@ -82,45 +81,66 @@ trap_init(void)
 	// - off: Offset in code segment for interrupt/trap handler 
 	
 	// unsigned sel = (unsigned) gdt[1].sd_base_15_0;
-	unsigned sel = 8;
+	unsigned sel = 0x08;
+	unsigned dpl = 0x00;
+	unsigned isExcep = 0x01;
+
 	void DivideError();
-	SETGATE(idt[0], 0, sel, &DivideError, 0); 
+	SETGATE(idt[T_DIVIDE], isExcep, sel, &DivideError, dpl); 
+
 	void NonMaskableInterrupt();
-	SETGATE(idt[1], 0, sel, NonMaskableInterrupt, 0); 
+	SETGATE(idt[T_NMI], isExcep, sel, NonMaskableInterrupt, dpl); 
+
 	void Breakpoint();
-	SETGATE(idt[2], 0, sel, &Breakpoint, 0); 
+	SETGATE(idt[T_BRKPT], isExcep, sel, &Breakpoint, dpl); 
+
 	void Overflow();
-	SETGATE(idt[3], 0, sel, &Overflow, 0); 
+	SETGATE(idt[T_OFLOW], isExcep, sel, &Overflow, dpl); 
+
 	void BOUNDRangeExceeded();
-	SETGATE(idt[4], 0, sel, &BOUNDRangeExceeded, 0); 
+	SETGATE(idt[T_BOUND], isExcep, sel, &BOUNDRangeExceeded, dpl); 
+
 	void InvalidOpCode();
-	SETGATE(idt[5], 0, sel, &InvalidOpCode, 0); 
+	SETGATE(idt[T_ILLOP], isExcep, sel, &InvalidOpCode, dpl); 
+
 	void DeviceNotAvailable();
-	SETGATE(idt[6], 0, sel, &DeviceNotAvailable, 0); 
+	SETGATE(idt[T_DEVICE], isExcep, sel, &DeviceNotAvailable, dpl); 
+
 	void DoubleFault();
-	SETGATE(idt[7], 0, sel, &DoubleFault, 0); 
+	SETGATE(idt[T_DBLFLT], isExcep, sel, &DoubleFault, dpl); 
+
 	void CoprocessorSegmentOverrun();
-	SETGATE(idt[8], 0, sel, &CoprocessorSegmentOverrun, 0); 
+	SETGATE(idt[9], isExcep, sel, &CoprocessorSegmentOverrun, dpl); 
+
 	void InvalidTSS();
-	SETGATE(idt[9], 0, sel, &InvalidTSS, 0); 
+	SETGATE(idt[T_TSS], isExcep, sel, &InvalidTSS, dpl); 
+
 	void SegmentNotPresent();
-	SETGATE(idt[10], 0, sel, &SegmentNotPresent, 0); 
+	SETGATE(idt[T_SEGNP], isExcep, sel, &SegmentNotPresent, dpl); 
+
 	void StackFault();
-	SETGATE(idt[11], 0, sel, &StackFault, 0); 
+	SETGATE(idt[T_STACK], isExcep, sel, &StackFault, dpl); 
+
 	void GeneralProtection();
-	SETGATE(idt[12], 0, sel, &GeneralProtection, 0); 
+	SETGATE(idt[T_GPFLT], isExcep, sel, &GeneralProtection, dpl); 
+
 	void PageFault();
-	SETGATE(idt[13], 0, sel, &PageFault, 0); 
+	SETGATE(idt[T_PGFLT], isExcep, sel, &PageFault, dpl); 
+
 	void UnknownTrap();
-	SETGATE(idt[14], 0, sel, &UnknownTrap, 0); 
+	SETGATE(idt[15], isExcep, sel, &UnknownTrap, dpl); 
+
 	void x87FPUFloatingPointError();
-	SETGATE(idt[15], 0, sel, &x87FPUFloatingPointError, 0); 
+	SETGATE(idt[T_FPERR], isExcep, sel, &x87FPUFloatingPointError, dpl); 
+
 	void AlignmentCheck();
-	SETGATE(idt[16], 0, sel, &AlignmentCheck, 0); 
+	SETGATE(idt[T_ALIGN], isExcep, sel, &AlignmentCheck, dpl); 
+
 	void MachineCheck();
-	SETGATE(idt[17], 0, sel, &MachineCheck, 0); 
+	SETGATE(idt[T_MCHK], isExcep, sel, &MachineCheck, dpl); 
+
 	void SIMDFloatingPointException();
-	SETGATE(idt[18], 0, sel, &SIMDFloatingPointException, 0); 
+	SETGATE(idt[T_SIMDERR], isExcep, sel, &SIMDFloatingPointException, dpl); 
 
 	// Per-CPU setup 
 	trap_init_percpu();
