@@ -1,0 +1,12 @@
+Questions:
+1.
+The purpose of having an individual handler for each one is so that each
+exception can have its own behavior. Specifically, we can have assembly that
+pushes a different error number onto the stack depending on what error
+occurred. If we only had one handler, then we wouldn't be able to figure out
+what the original exception was for.
+
+2.
+Nope! It worked perfectly on our first try. (we'll come back to this after we
+clean up some stuff in trap.c).
+
