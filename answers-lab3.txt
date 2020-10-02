@@ -7,5 +7,9 @@ occurred. If we only had one handler, then we wouldn't be able to figure out
 what the original exception was for.
 
 2.
-We get interrupt vector 13 because the user was trying to executre a protected
+We get interrupt vector 13 because the user was trying to execute a protected
 instruction, so instead of a page fault, we get a general protection fault.
+This is because the DPL for trap 14 is zero, which means that the user can't 
+access trap 14 directly, and instead is routed to trap 13. If we had specified 
+that trap 14 was a DPL of three, then the user could have called trap 14
+directly. 
