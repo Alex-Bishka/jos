@@ -21,35 +21,35 @@
  * where NAME is the argument passed to TRAPHANDLER.
  */
 #define TRAPHANDLER(name, num)						\
-.text									\
+.text;									\
 	.globl name;		/* define global symbol for 'name' */	\
 	.type name, @function;	/* symbol type is function */		\
 	.align 2;		/* align function definition */		\
 	name:			/* function starts here */		\
 	pushl $(num);							\
-	jmp _alltraps
-.data									
-	.long name
-	.long num
-	.long 0
+	jmp _alltraps; \
+.data;								        \
+	.long name; \
+	.long num; \
+	.long 0; \
 	.long 1
 /* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
  */
 #define TRAPHANDLER_NOEC(name, num)					\
-.text									\
+.text;									\
 	.globl name;							\
 	.type name, @function;						\
 	.align 2;							\
 	name:								\
 	pushl $0;							\
 	pushl $(num);							\
-	jmp _alltraps
-.data
-	.long name
-	.long num
-	.long 0
+	jmp _alltraps; \
+.data; \
+	.long name; \
+	.long num; \
+	.long 0; \
 	.long 1
 
 /*
@@ -59,6 +59,7 @@
  *	 	#define T_RES    15 reserved (or T_DEFAULT aka catchall for unknown?)
  *		do not touch since reserved?
  */
+.data
 	.globl traphandlers
 
 traphandlers:
@@ -80,6 +81,7 @@ TRAPHANDLER_NOEC(AlignmentCheck, T_ALIGN);
 TRAPHANDLER_NOEC(MachineCheck, T_MCHK);
 TRAPHANDLER_NOEC(SIMDFloatingPointException, T_SIMDERR);
 .data
+	// our null pointer that signifies the end of the IDT array
 	.long 0
 	.long 0
 	.long 0

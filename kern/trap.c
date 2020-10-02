@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/memlayout.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -62,6 +63,13 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
+	struct traphandlerstruct {
+		void (*functionaddr)();
+		int trapNo;
+		int dpl;
+		int isTrap;
+	};
+	extern struct traphandlerstruct traphandlers[];
 	// LAB 3: Your code here.
 	// trap_init should 
 	// 1) initialize the IDT with the addresses
@@ -75,7 +83,7 @@ trap_init(void)
 	// DURING ACTUAL TRAP
 	// IDT -> traphandler function -> _alltraps -> vall trap -> calls trapdispatch -> does things
 
-	// SETGATE(gate, istrap, sel, off, dpl) 
+	// SETGATE(gate, ilstrap, sel, off, dpl) 
 	// 1 is exception and 0 is interrupt	
 	// sel: Code segment selector for interrupt/trap handler 
 	// - off: Offset in code segment for interrupt/trap handler 
@@ -86,7 +94,10 @@ trap_init(void)
 	unsigned isExcep = 0x01;
 
 	void DivideError();
-	SETGATE(idt[T_DIVIDE], isExcep, sel, &DivideError, dpl); 
+	SETGATE(idt[traphandlers[0].trapNo], traphandlers[0].isTrap, GD_KT, traphandlers[0].functionaddr, traphandlers[0].dpl); 
+	while (traphandlers[i]
+		SETGATE(idt[trap.trapNo], trap.isTrap, GD_KT, trap.functionaddr, trap.dpl); 	
+	}
 
 	void NonMaskableInterrupt();
 	SETGATE(idt[T_NMI], isExcep, sel, &NonMaskableInterrupt, dpl); 
