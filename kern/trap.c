@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/memlayout.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -62,9 +63,20 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	extern struct Segdesc gdt[];
+	struct thstruct {
+		void (*fnaddr)();
+		int trapNo;
+		int dpl;
+		int isTrap;
+	};
 
 	// LAB 4: Your code here.
+	extern struct thstruct traphandlers[];
+
+	for (int i = 0; traphandlers[i].fnaddr != 0; i++) {
+		struct thstruct trap = traphandlers[i];
+		SETGATE(idt[trap.trapNo], trap.isTrap, GD_KT, trap.fnaddr, trap.dpl); 	
+	}
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -143,7 +155,12 @@ static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
+<<<<<<< HEAD
 	// LAB 4: Your code here.
+=======
+	// LAB 3: Your code here.
+	
+>>>>>>> lab3
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
