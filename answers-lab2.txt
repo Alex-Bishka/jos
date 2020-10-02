@@ -31,7 +31,7 @@ stored in 1 page so we get 4 KB * 64 + 4 KB). The pages
 array contains 2^10 structs, each containing a 4-byte pointer and a 2-byte
 integer. Since they have to be aligned, each struct uses up 8 bytes, for a
 total of 8 KB for the pages array. Therefore in total we require 268 KB of
-overhead.
+overhead. 
 
 Question 6 -
 We transition after we jump into the kernel. The point of this is to map the
