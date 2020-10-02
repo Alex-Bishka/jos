@@ -403,7 +403,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	
 	for (int i = 0; i < size; i += PGSIZE) {
 		pte_t *pte = pgdir_walk(pgdir, (void *) va + i, 1); 
 		*pte = (pa + i) | perm | PTE_P;
@@ -810,7 +809,6 @@ check_page(void)
 
 	// there is no free memory, so we can't allocate a page table
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0);
-
 
 	// free pp0 and try again: pp0 should be used for page table
 	page_free(pp0);
