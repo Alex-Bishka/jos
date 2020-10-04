@@ -20,7 +20,7 @@
  *   void NAME();
  * where NAME is the argument passed to TRAPHANDLER.
  */
-#define TRAPHANDLER(name, num)						;\
+#define TRAPHANDLER(name, num, dpl)					;\
 .text									;\
 	.globl name		/* define global symbol for 'name' */	;\
 	.type name, @function	/* symbol type is function */		;\
@@ -31,13 +31,13 @@
 .data								        ;\
 	.long name 							;\
 	.long num 							;\
-	.long 0 							;\
+	.long dpl							;\
 	.long 1
 /* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
  */
-#define TRAPHANDLER_NOEC(name, num)					;\
+#define TRAPHANDLER_NOEC(name, num, dpl)				;\
 .text									;\
 	.globl name							;\
 	.type name, @function						;\
@@ -49,7 +49,7 @@
 .data 									;\
 	.long name 							;\
 	.long num 							;\
-	.long 0 							;\
+	.long dpl 							;\
 	.long 1
 
 /*
@@ -63,23 +63,24 @@
 	.globl traphandlers
 
 traphandlers:
-TRAPHANDLER_NOEC(DivideError, T_DIVIDE);
-TRAPHANDLER_NOEC(NonMaskableInterrupt, T_NMI);
-TRAPHANDLER_NOEC(Breakpoint, T_BRKPT);
-TRAPHANDLER_NOEC(Overflow, T_OFLOW);
-TRAPHANDLER_NOEC(BOUNDRangeExceeded, T_BOUND);
-TRAPHANDLER_NOEC(InvalidOpCode, T_ILLOP);
-TRAPHANDLER_NOEC(DeviceNotAvailable, T_DEVICE);
-TRAPHANDLER(DoubleFault, T_DBLFLT);
-TRAPHANDLER(InvalidTSS, T_TSS);
-TRAPHANDLER(SegmentNotPresent, T_SEGNP);
-TRAPHANDLER(StackFault, T_STACK);
-TRAPHANDLER(GeneralProtection, T_GPFLT);
-TRAPHANDLER(PageFault, T_PGFLT);
-TRAPHANDLER_NOEC(x87FPUFloatingPointError, T_FPERR);
-TRAPHANDLER_NOEC(AlignmentCheck, T_ALIGN);
-TRAPHANDLER_NOEC(MachineCheck, T_MCHK);
-TRAPHANDLER_NOEC(SIMDFloatingPointException, T_SIMDERR);
+TRAPHANDLER_NOEC(DivideError, T_DIVIDE, 0);
+TRAPHANDLER_NOEC(NonMaskableInterrupt, T_NMI, 0);
+TRAPHANDLER_NOEC(Breakpoint, T_BRKPT, 3);
+TRAPHANDLER_NOEC(Overflow, T_OFLOW, 0);
+TRAPHANDLER_NOEC(BOUNDRangeExceeded, T_BOUND, 0);
+TRAPHANDLER_NOEC(InvalidOpCode, T_ILLOP, 0);
+TRAPHANDLER_NOEC(DeviceNotAvailable, T_DEVICE, 0);
+TRAPHANDLER(DoubleFault, T_DBLFLT, 0);
+TRAPHANDLER(InvalidTSS, T_TSS, 0);
+TRAPHANDLER(SegmentNotPresent, T_SEGNP, 0);
+TRAPHANDLER(StackFault, T_STACK, 0);
+TRAPHANDLER(GeneralProtection, T_GPFLT, 0);
+TRAPHANDLER(PageFault, T_PGFLT, 0);
+TRAPHANDLER_NOEC(x87FPUFloatingPointError, T_FPERR, 0);
+TRAPHANDLER_NOEC(AlignmentCheck, T_ALIGN, 0);
+TRAPHANDLER_NOEC(MachineCheck, T_MCHK, 0);
+TRAPHANDLER_NOEC(SIMDFloatingPointException, T_SIMDERR, 0);
+TRAPHANDLER(SysCall, T_SYSCALL, 3);
 .data
 	// our null pointer that signifies the end of the IDT array
 	.long 0
