@@ -349,10 +349,6 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  to make sure that the environment starts executing there.
 	//  What?  (See env_run() and env_pop_tf() below.)
 
-	// Now map one page for the program's initial stack
-	// at virtual address USTACKTOP - PGSIZE.
-
-	// LAB 3: Your code here.
 	struct Proghdr *ph, *eph;
 	struct Elf* elf = (struct Elf*) binary;
 	if (elf->e_magic != ELF_MAGIC)                                                              
@@ -368,6 +364,9 @@ load_icode(struct Env *e, uint8_t *binary)
 		memmove((void*) ph->p_va, (void*) (binary + ph->p_offset), ph->p_filesz);
 		memset((void*) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 	}
+
+	// Now map one page for the program's initial stack
+	// at virtual address USTACKTOP - PGSIZE.
 	region_alloc(e, (void*) (USTACKTOP - PGSIZE), PGSIZE);
 	lcr3(PADDR(kern_pgdir));
 
@@ -495,7 +494,7 @@ env_run(struct Env *e)
 	// Step 2: Use env_pop_tf() to restore the environment's
 	//	   registers and drop into user mode in the
 	//	   environment.
-	
+
 	// Hint: This function loads the new environment's state from
 	//	e->env_tf.  Go back through the code you wrote above
 	//	and make sure you have set the relevant parts of
