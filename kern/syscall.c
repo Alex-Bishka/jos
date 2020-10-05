@@ -20,12 +20,7 @@ sys_cputs(const char *s, size_t len)
 	// Check that the user has permission to read memory [s, s+len).
 	// Destroy the environment if not.
 
-	for (void* start = ROUNDDOWN((void *) s, PGSIZE); start < (void*) s + len; start += PGSIZE) {
-		pte_t* pg = pgdir_walk(curenv->env_pgdir, (void *) s, 0);
-		if (!(*pg & PTE_U)) {
-			env_destroy(curenv);	
-		}
-	}
+	user_mem_assert(curenv, (const void*) s, len, PTE_U); 
 
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
@@ -75,7 +70,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
 
-	
 	switch (syscallno) {
 		case SYS_cputs:
 			sys_cputs((const char*) a1, a2);
