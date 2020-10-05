@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/memlayout.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -69,9 +70,20 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	extern struct Segdesc gdt[];
+	struct thstruct {
+		void (*fnaddr)();
+		int trapNo;
+		int dpl;
+		int isTrap;
+	};
 
 	// LAB 4: Your code here.
+	extern struct thstruct traphandlers[];
+
+	for (int i = 0; traphandlers[i].fnaddr != 0; i++) {
+		struct thstruct trap = traphandlers[i];
+		SETGATE(idt[trap.trapNo], trap.isTrap, GD_KT, trap.fnaddr, trap.dpl); 	
+	}
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -191,6 +203,18 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 7: Your code here.
 
+	// LAB 4: Your code here.
+	switch (tf->tf_trapno) {
+		case T_PGFLT:
+			page_fault_handler(tf);
+		case T_BRKPT:
+			monitor(tf);
+			return;
+		case T_SYSCALL:
+			tf->tf_regs.reg_eax = (uint32_t) syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+			return;
+	}			
+
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -270,8 +294,12 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
+	if (tf->tf_cs == GD_KT)
+		panic("page fault in kernel mode");
 
-	// LAB 3: Your code here.
+	// LAB 4: Your code here.
+	
+	
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
