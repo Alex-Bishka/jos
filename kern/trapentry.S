@@ -80,7 +80,7 @@ TRAPHANDLER_NOEC(x87FPUFloatingPointError, T_FPERR, 0);
 TRAPHANDLER_NOEC(AlignmentCheck, T_ALIGN, 0);
 TRAPHANDLER_NOEC(MachineCheck, T_MCHK, 0);
 TRAPHANDLER_NOEC(SIMDFloatingPointException, T_SIMDERR, 0);
-TRAPHANDLER(SysCall, T_SYSCALL, 3);
+TRAPHANDLER_NOEC(SysCall, T_SYSCALL, 3);
 .data
 	// our null pointer that signifies the end of the IDT array
 	.long 0
