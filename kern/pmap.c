@@ -62,6 +62,7 @@ i386_detect_memory(void)
 // --------------------------------------------------------------
 
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+static void big_boot_map_region(pde_t *pgdir);
 static void check_page_free_list(bool only_low_memory);
 static void check_page_alloc(void);
 static void check_kern_pgdir(void);
@@ -198,7 +199,9 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
+	//boot_map_region(kern_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
+	big_boot_map_region(kern_pgdir);
+
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 
@@ -392,6 +395,23 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 		pte_t *pte = pgdir_walk(pgdir, (void *) va + i, 1); 
 		*pte = (pa + i) | perm | PTE_P;
 	}	
+}
+
+//
+// Map KERNBASE and up in big pages (4MB=2^22) rather than regular ones (4KB=2^10)
+// This will cause us to use less pages for this mapping. We don't have to worry 
+// about internal fragmentation, since we will be mapping but not allocating from 
+// these virtual addresses. Instead of the 256 MB in this region taking up 64K pages,
+// it will only take up 64 pages. In this way our page directory entries can map DIRECTLY
+// to pages, which are the same size as if we had them mapped to page tables. The math
+// behind this is that (64 PDEs) * 4MB (data/PDE) = (64 PDEs) * 1K (PTEs/PDE) * 4KB (data/PTE).
+// This saves us 64 pages = 256 KB in total.
+static void
+big_boot_map_region(pde_t *pgdir) {
+	for (int i = 0; i < (size_t) ((1ll<<32) - KERNBASE); i += PGSIZE<<10) {
+		pde_t* pde = &pgdir[PDX(KERNBASE + i)];
+		*pde = i | PTE_PS | PTE_P | PTE_W;
+	}
 }
 
 //
