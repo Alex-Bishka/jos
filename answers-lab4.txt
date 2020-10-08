@@ -1,7 +1,7 @@
 Questions:
 3) The kernel will check to see if the user can actually call the exception
 directly. If the DPL for the exception is 3, then the user is allowed to call
-it direclty; if it's 0, then the user isn't, and the kernel will instead
+it directly; if it's 0, then the user isn't, and the kernel will instead
 default to a general protection fault. In this case, we want to set things up
 such that the user can directly call a breakpoint exception, so in this case
 we want to set the DPL to 3.
