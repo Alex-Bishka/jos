@@ -38,7 +38,9 @@ sched_yield(void)
 			env_run(&envs[i % NENV]); //Synchronization??
 		}
 	}
-
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
 	// sched_halt never returns
 	sched_halt();
 }
