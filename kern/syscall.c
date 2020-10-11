@@ -89,7 +89,7 @@ sys_exofork(void)
 	if ((error = env_alloc(&env, curenv->env_id)))
 		return error;
 
-	env->env_tf.tf_regs = curenv->env_tf.tf_regs;
+	env->env_tf = curenv->env_tf;
 	env->env_tf.tf_regs.reg_eax = 0;
 	env->env_status = ENV_NOT_RUNNABLE;
 	return env->env_id;
@@ -164,8 +164,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	//   If page_insert() fails, remember to free the page you
 	//   allocated!
 
-	// LAB 5: Your code here.
-	if ((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL))
+	if (!((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL)))
 		return -E_INVAL;
 
 	if (((int) va >= UTOP) || ((int) va % PGSIZE))
@@ -213,7 +212,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	//   check the current permissions on the page.
 
 	// LAB 5: Your code here.
-	if ((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL))
+	if (!((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL)))
 		return -E_INVAL;
 
 	if (((int) srcva >= UTOP) || ((int) srcva % PGSIZE))
@@ -223,7 +222,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 		return -E_INVAL;
 
 	struct Env* srcenv;
-	if (envid2env(srcenvid, &srcenv, 0))
+	if (envid2env(srcenvid, &srcenv, 1))
 		return -E_BAD_ENV;
 
 	struct Env* dstenv;
@@ -353,6 +352,16 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_yield:
 			sys_yield();
 			return 0;
+		case SYS_exofork:
+			return sys_exofork();
+		case SYS_env_set_status:
+			return sys_env_set_status(a1, a2);
+		case SYS_page_alloc:
+			return sys_page_alloc(a1, (void*) a2, a3);
+		case SYS_page_map:
+			return sys_page_map(a1, (void*) a2, a3, (void*) a4, a5); 
+		case SYS_page_unmap:
+			return sys_page_unmap(a1, (void*) a2); 
 		default:
 			return -E_INVAL;
 	}
