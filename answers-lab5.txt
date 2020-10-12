@@ -1,0 +1,10 @@
+1)
+
+2)
+
+3) Each environment's page directory is virutal address mapped above
+Kernbase. This means that it does no matter which page directroy the mmu is
+using for conversions, as the mapping of logical addresses to physical
+addresses is the same across all page directories for that region.
+
+4)
