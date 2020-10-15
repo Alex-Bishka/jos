@@ -335,13 +335,6 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 5: Your code here.
-	
-	//TODO: push things onto the stack at UXSTACKTOP
-	if (curenv->env_pgfault_upcall) {
-		// move stack pointer
-		// memmove the trap frame in
-		// *esp = tf
-	}
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
