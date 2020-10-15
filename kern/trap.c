@@ -347,24 +347,25 @@ page_fault_handler(struct Trapframe *tf)
 		env_destroy(curenv);
 	}
 	struct UTrapframe utf = {
-		utf_fault_va = fault_va;
-		utf_err = tf.tf_err;
-		utf_regs = tf.tf_regs;
-		utf_eip = tf.tf_eip;
-		utf_eflags = tf.tf_eflags;
-		utf_esp = tf.tf_esp;
-	}
-	user_mem_assert(curenv, UXSTACKTOP-PGSIZE, PGSIZE, PTE_W); 
-	if esp in UXSTACKTOP { // turn into real c
+		 fault_va,
+		 tf->tf_err,
+		 tf->tf_regs,
+		 tf->tf_eip,
+		 tf->tf_eflags,
+		 tf->tf_esp,
+	};
+	user_mem_assert(curenv, (void*) (UXSTACKTOP-PGSIZE), PGSIZE, PTE_W); 
+	void* esp = (void*) tf->tf_esp;
+	if (esp < (void*) UXSTACKTOP && esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf))) {
 		// the sizeof(int) gives us 4 bytes of scratch space at the top of UXSTACK
 		esp -= sizeof(int);
 	} else {
-		esp = USTACKTOP;
+		esp = (void*) UXSTACKTOP;
 	}
 	esp -= sizeof(utf);
-	*esp = utf;
-	curenv->env_tf.tf_eip = curenv->env_pgfault_upcall;
-	curenv->env_tf.tf_esp = esp;
+	*((struct UTrapframe*) esp) = utf;
+	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+	curenv->env_tf.tf_esp = (uintptr_t) esp;
 	env_run(curenv); 
 }
 
