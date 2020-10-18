@@ -68,7 +68,7 @@ _pgfault_upcall:
 
 	movl 0x48(%esp), %ecx //set ecx to esp
 	movl 0x40(%esp), %edx //set edx to eip
-	movl %edx, (%ecx) //move eip into esp
+	movl %edx, 0x48(%ecx) //move eip into esp
 
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
@@ -86,7 +86,7 @@ _pgfault_upcall:
 	// no longer use arithmetic operations or anything else that
 	// modifies eflags.
 	// LAB 6: Your code here.
-	push 0x44(%esp)
+	pushl 0x44(%esp)
 	popfl
 
 	// Switch back to the adjusted trap-time stack.
