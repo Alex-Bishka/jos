@@ -293,6 +293,7 @@ page_fault_handler(struct Trapframe *tf)
 
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
+	cprintf("this is our fault_va: %x\n", fault_va);
 
 	// Handle kernel-mode page faults.
 	if (tf->tf_cs == GD_KT)
@@ -346,24 +347,34 @@ page_fault_handler(struct Trapframe *tf)
 		print_trapframe(tf);
 		env_destroy(curenv);
 	}
-	struct UTrapframe utf = {
-		 fault_va,
-		 tf->tf_err,
-		 tf->tf_regs,
-		 tf->tf_eip,
-		 tf->tf_eflags,
-		 tf->tf_esp,
+	struct UTrapframe* utf = {
+		fault_va,
+		tf->tf_err,
+		tf->tf_regs,
+		tf->tf_eip,
+		tf->tf_eflags,
+		tf->tf_esp,
 	};
+	//utf.utf_fault_va = fault_va;
+	//utf->utf_fault_va = 4;
+	//utf->utf_err = tf->tf_err;
+        //utf->utf_regs = tf->tf_regs;
+	//utf->utf_eip = tf->tf_eip;
+	//utf->utf_eflags = tf->tf_eflags;
+	//utf->utf_esp = tf->tf_esp;
+
 	user_mem_assert(curenv, (void*) (UXSTACKTOP-PGSIZE), PGSIZE, PTE_W); 
 	void* esp = (void*) tf->tf_esp;
-	if (esp < (void*) UXSTACKTOP && esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf))) {
+	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(*utf)))) {
 		// the sizeof(int) gives us 4 bytes of scratch space at the top of UXSTACK
+		cprintf("our esp is %x\n", esp);
 		esp -= sizeof(int);
 	} else {
 		esp = (void*) UXSTACKTOP;
 	}
-	esp -= sizeof(utf);
-	*((struct UTrapframe*) esp) = utf;
+	esp -= sizeof(*utf);
+	*((struct UTrapframe*) esp) = *utf;
+	cprintf("utf in kernel: %x\n", *((struct UTrapframe*) esp));
 	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 	curenv->env_tf.tf_esp = (uintptr_t) esp;
 	env_run(curenv); 
