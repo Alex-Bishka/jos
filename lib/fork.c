@@ -60,6 +60,7 @@ duppage(envid_t envid, unsigned pn)
 
 //
 // User-level fork with copy-on-write.
+// 
 // Set up our page fault handler appropriately.
 // Create a child.
 // Copy our address space and page fault handler setup to the child.
@@ -78,7 +79,18 @@ envid_t
 fork(void)
 {
 	// LAB 5: Your code here.
-	panic("fork not implemented");
+	set_pgfault_handler(pgfault);
+	
+	envid_t envid = sys_exofork();
+	
+	if (envid == 0) {
+		set_pgfault_handler(pgfault);
+	} else {
+		for (void* pn = 0; pn * PGSIZE < UTOP; ++pn) {
+			duppage(envid, pn);
+		}
+	}
+	return envid;
 }
 
 // Challenge!
