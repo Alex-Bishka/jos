@@ -35,7 +35,7 @@ sched_yield(void)
 	}
 	for (int i = start; i < NENV + start; i++) {
 		if(envs[i % NENV].env_status == ENV_RUNNABLE) {
-			env_run(&envs[i % NENV]); //Synchronization??
+			env_run(&envs[i % NENV]);
 		}
 	}
 	if (curenv && curenv->env_status == ENV_RUNNING) {
