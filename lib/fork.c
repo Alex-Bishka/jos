@@ -31,7 +31,12 @@ pgfault(struct UTrapframe *utf)
 	// page to the old page's address.
 	// Hint:
 	//   You should make three system calls.
-
+	
+	//TODO: actually do checks on returns and maybe panic
+	r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W); 
+	memmove(ROUNDDOWN(addr, PGSIZE), PFTEMP, PGSIZE);
+	sys_page_map(0, PFTEMP, 0, addr, PTE_P | PTE_U | PTE_W);
+	sys_page_unmap(0, PFTEMP);
 	// LAB 5: Your code here.
 
 	panic("pgfault not implemented");
@@ -51,11 +56,19 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	int r;
-
 	// LAB 5: Your code here.
-	panic("duppage not implemented");
-	return 0;
+	if (writeable || COW) {
+		int r;
+		if ((r=sys_page_map(0, pn*PGSIZE, envid, pn*PGSIZE, PTE_COW | PTE_P | PTE_U)) < 0) {
+			return r;
+		}
+		if (!(uvpt[pn] & PTE_COW)) {
+			r = sys_page_map(0, pn*PGSIZE, 0, pn*PGSIZE, PTE_COW | PTE_P | PTE_U);
+		}
+		return r;
+	} else {
+		return sys_page_map(0, pn*PGSIZE, envid, pn*PGSIZE, PTE_P | PTE_U);
+	}
 }
 
 //
@@ -84,17 +97,25 @@ fork(void)
 	envid_t envid = sys_exofork();
 	
 	if (envid == 0) {
-		set_pgfault_handler(pgfault);
+		thisenv = &envs[sys_getenvid()];
 	} else {
+		// _pgfault_upcall will call the pgfault_handler that is in
+		// our globals, and since we set those before we dropped into
+		// the child's execution, that handler will be available as
+		// well.
+		sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+		/*
 		for (page table in page tables) {
 			memmove(, cPT, PGSIZE);
 		}
 		memmove(pPD, cPD);
+		*/
 		for (void* pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
-			if (*pgdir_walk(uvpd, pn * PGSIZE, 0) & PTE_W) {
+			if ((uvpd[pn >> 10] & PTE_P) && (uvpt[pn] & PTE_P)) {
 				duppage(envid, pn);
 			}
 		}
+		sys_page_alloc(envid, UXSTACKTOP-PGSIZE, PTE_W | PTE_U | PTE_P);
 	}
 	return envid;
 }
