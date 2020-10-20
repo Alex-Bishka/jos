@@ -86,8 +86,14 @@ fork(void)
 	if (envid == 0) {
 		set_pgfault_handler(pgfault);
 	} else {
-		for (void* pn = 0; pn * PGSIZE < UTOP; ++pn) {
-			duppage(envid, pn);
+		for (page table in page tables) {
+			memmove(, cPT, PGSIZE);
+		}
+		memmove(pPD, cPD);
+		for (void* pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
+			if (*pgdir_walk(uvpd, pn * PGSIZE, 0) & PTE_W) {
+				duppage(envid, pn);
+			}
 		}
 	}
 	return envid;
