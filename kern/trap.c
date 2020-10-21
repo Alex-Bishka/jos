@@ -347,6 +347,9 @@ page_fault_handler(struct Trapframe *tf)
 		print_trapframe(tf);
 		env_destroy(curenv);
 	}
+	cprintf("before user_mem_assert\n");
+	user_mem_assert(curenv, curenv->env_pgfault_upcall, 0, PTE_P | PTE_U); 
+	cprintf("past user_mem_assert\n");
 	struct UTrapframe utf = {
 		fault_va,
 		tf->tf_err,
@@ -363,7 +366,6 @@ page_fault_handler(struct Trapframe *tf)
 	//utf->utf_eflags = tf->tf_eflags;
 	//utf->utf_esp = tf->tf_esp;
 
-	user_mem_assert(curenv, (void*) (UXSTACKTOP-PGSIZE), PGSIZE, PTE_W); 
 	void* esp = (void*) tf->tf_esp;
 	cprintf("our esp before moving things is %x\n", esp);
 	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)))) {
@@ -376,6 +378,7 @@ page_fault_handler(struct Trapframe *tf)
 		esp = (void*) UXSTACKTOP;
 	}
 	esp -= sizeof(utf);
+	user_mem_assert(curenv, esp, 0, PTE_W | PTE_P | PTE_U); 
 	*((struct UTrapframe*) esp) = utf;
 		cprintf("our esp ater moving things is %x\n", esp);
 	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;

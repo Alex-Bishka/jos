@@ -23,23 +23,28 @@ pgfault(struct UTrapframe *utf)
 	// Hint:
 	//   Use the read-only page table mappings at uvpt
 	//   (see <inc/memlayout.h>).
-
-	// LAB 5: Your code here.
+	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
+		panic("page associated with faulting virtual addr is not present");
+	}
+	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
+		panic("page associated with faulting virtual addr is neither writable nor COW");
+	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
 	// page to the old page's address.
 	// Hint:
 	//   You should make three system calls.
-	
-	//TODO: actually do checks on returns and maybe panic
-	r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W); 
+	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0) {
+		panic("pgfault could not allocate temp page");	
+	}
 	memmove(ROUNDDOWN(addr, PGSIZE), PFTEMP, PGSIZE);
-	sys_page_map(0, PFTEMP, 0, addr, PTE_P | PTE_U | PTE_W);
-	sys_page_unmap(0, PFTEMP);
-	// LAB 5: Your code here.
-
-	panic("pgfault not implemented");
+	if ((r = sys_page_map(0, PFTEMP, 0, addr, PTE_P | PTE_U | PTE_W)) < 0 ) {
+		panic("pgfault could not map temp page");
+	}
+	if ((r = sys_page_unmap(0, PFTEMP)) < 0) {
+		panic("pgfault failed to unmap temporary page");
+	}
 }
 
 //
@@ -56,18 +61,17 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	// LAB 5: Your code here.
-	if (writeable || COW) {
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
 		int r;
-		if ((r=sys_page_map(0, pn*PGSIZE, envid, pn*PGSIZE, PTE_COW | PTE_P | PTE_U)) < 0) {
+		if ((r=sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U)) < 0) {
 			return r;
 		}
 		if (!(uvpt[pn] & PTE_COW)) {
-			r = sys_page_map(0, pn*PGSIZE, 0, pn*PGSIZE, PTE_COW | PTE_P | PTE_U);
+			r = sys_page_map(0, (void*) (pn*PGSIZE), 0, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U);
 		}
 		return r;
 	} else {
-		return sys_page_map(0, pn*PGSIZE, envid, pn*PGSIZE, PTE_P | PTE_U);
+		return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_P | PTE_U);
 	}
 }
 
@@ -103,20 +107,23 @@ fork(void)
 		// our globals, and since we set those before we dropped into
 		// the child's execution, that handler will be available as
 		// well.
-		sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+		sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall);
+		cprintf("this->env_pgfault_upcall: %p\n", thisenv->env_pgfault_upcall); 
 		/*
 		for (page table in page tables) {
 			memmove(, cPT, PGSIZE);
 		}
 		memmove(pPD, cPD);
 		*/
-		for (void* pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
+		for (unsigned pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
 			if ((uvpd[pn >> 10] & PTE_P) && (uvpt[pn] & PTE_P)) {
 				duppage(envid, pn);
 			}
 		}
-		sys_page_alloc(envid, UXSTACKTOP-PGSIZE, PTE_W | PTE_U | PTE_P);
+		sys_page_alloc(envid, (void*) (UXSTACKTOP-PGSIZE), PTE_W | PTE_U | PTE_P);
+		sys_env_set_status(envid, ENV_RUNNABLE);
 	}
+	cprintf("our envid is: %d\n", envid);
 	return envid;
 }
 

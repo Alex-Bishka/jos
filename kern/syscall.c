@@ -138,7 +138,6 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 	if (envid2env(envid, &env, 1))
 		return -E_BAD_ENV;
 	
-
 	env->env_pgfault_upcall = func;
 	return 0;
 }
