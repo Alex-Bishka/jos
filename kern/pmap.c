@@ -339,7 +339,6 @@ page_init(void)
 //
 // Returns NULL if out of free memory.
 //
-// Hint: use page2kva and memset
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
@@ -362,9 +361,6 @@ page_alloc(int alloc_flags)
 void
 page_free(struct PageInfo *pp)
 {
-	// Fill this function in
-	// Hint: You may want to panic if pp->pp_ref is nonzero or
-	// pp->pp_link is not NULL.
 	if (pp->pp_ref) {
 		panic("The page you are trying to free had a nonzero reference count");
 	}
@@ -397,17 +393,6 @@ page_decref(struct PageInfo* pp)
 //    - Otherwise, the new page's reference count is incremented,
 //	the page is cleared,
 //	and pgdir_walk returns a pointer into the new page table page.
-//
-// Hint 1: you can turn a PageInfo * into the physical address of the
-// page it refers to with page2pa() from kern/pmap.h.
-//
-// Hint 2: the x86 MMU checks permission bits in both the page directory
-// and the page table, so it's safe to leave permissions in the page
-// directory more permissive than strictly necessary.
-//
-// Hint 3: look at inc/mmu.h for useful macros that manipulate page
-// table and page directory entries.
-//
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
@@ -440,7 +425,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // above UTOP. As such, it should *not* change the pp_ref field on the
 // mapped pages.
 //
-// Hint: the TA solution uses pgdir_walk
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
@@ -472,9 +456,6 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 //   0 on success
 //   -E_NO_MEM, if page table couldn't be allocated
 //
-// Hint: The TA solution is implemented using pgdir_walk, page_remove,
-// and page2pa.
-//
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
@@ -500,8 +481,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 //
 // Return NULL if there is no page mapped at va.
 //
-// Hint: the TA solution uses pgdir_walk and pa2page.
-//
 struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
@@ -526,9 +505,6 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 //     (if such a PTE exists)
 //   - The TLB must be invalidated if you remove an entry from
 //     the page table.
-//
-// Hint: The TA solution is implemented using page_lookup,
-// 	tlb_invalidate, and page_decref.
 //
 void
 page_remove(pde_t *pgdir, void *va)
@@ -581,9 +557,6 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// handle if this reservation would overflow MMIOLIM (it's
 	// okay to simply panic if this happens).
 	//
-	// Hint: The staff solution uses boot_map_region.
-	//
-	// Your code here:
 	if (base + size > MMIOLIM) {
 		panic("mmio_map_region is out of memory bounds");
 	}
