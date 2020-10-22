@@ -293,7 +293,6 @@ page_fault_handler(struct Trapframe *tf)
 
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
-	cprintf("fault_va at the top of kernel page_fault_handler: %x\n", fault_va);
 
 	// Handle kernel-mode page faults.
 	if (tf->tf_cs == GD_KT)
@@ -347,9 +346,7 @@ page_fault_handler(struct Trapframe *tf)
 		print_trapframe(tf);
 		env_destroy(curenv);
 	}
-	cprintf("before user_mem_assert\n");
 	user_mem_assert(curenv, curenv->env_pgfault_upcall, 0, PTE_P | PTE_U); 
-	cprintf("past user_mem_assert\n");
 	struct UTrapframe utf = {
 		fault_va,
 		tf->tf_err,
@@ -367,10 +364,8 @@ page_fault_handler(struct Trapframe *tf)
 	//utf->utf_esp = tf->tf_esp;
 
 	void* esp = (void*) tf->tf_esp;
-	cprintf("our esp before moving things is %x\n", esp);
 	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)))) {
 		// the sizeof(int) gives us 4 bytes of scratch space at the top of UXSTACK
-		cprintf("we are in a recursive page fault\n");
 		esp -= sizeof(int);
 	} else if (esp < (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)) && esp > (void*) (UXSTACKTOP - PGSIZE * 2)) {
 		env_destroy(curenv);
@@ -380,7 +375,6 @@ page_fault_handler(struct Trapframe *tf)
 	esp -= sizeof(utf);
 	user_mem_assert(curenv, esp, 0, PTE_W | PTE_P | PTE_U); 
 	*((struct UTrapframe*) esp) = utf;
-		cprintf("our esp ater moving things is %x\n", esp);
 	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 	curenv->env_tf.tf_esp = (uintptr_t) esp;
 	env_run(curenv); 

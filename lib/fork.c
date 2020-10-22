@@ -24,6 +24,7 @@ pgfault(struct UTrapframe *utf)
 	//   Use the read-only page table mappings at uvpt
 	//   (see <inc/memlayout.h>).
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
+		cprintf("addr is: %p\n",addr);
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
@@ -38,8 +39,10 @@ pgfault(struct UTrapframe *utf)
 	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0) {
 		panic("pgfault could not allocate temp page");	
 	}
-	memmove(ROUNDDOWN(addr, PGSIZE), PFTEMP, PGSIZE);
-	if ((r = sys_page_map(0, PFTEMP, 0, addr, PTE_P | PTE_U | PTE_W)) < 0 ) {
+	cprintf("PFTEMP: %x, addr: %x\n", PFTEMP, addr);
+	memmove(PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
+	if ((r = sys_page_map(0, PFTEMP, 0, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_U | PTE_W)) < 0 ) {
+		cprintf("error: %e\n", r);
 		panic("pgfault could not map temp page");
 	}
 	if ((r = sys_page_unmap(0, PFTEMP)) < 0) {
@@ -102,26 +105,31 @@ fork(void)
 	
 	if (envid == 0) {
 		thisenv = &envs[sys_getenvid()];
+		cprintf("our thisenv is at: %d\n", thisenv);
 	} else {
 		// _pgfault_upcall will call the pgfault_handler that is in
 		// our globals, and since we set those before we dropped into
 		// the child's execution, that handler will be available as
 		// well.
-		sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall);
-		cprintf("this->env_pgfault_upcall: %p\n", thisenv->env_pgfault_upcall); 
-		/*
-		for (page table in page tables) {
-			memmove(, cPT, PGSIZE);
+		cprintf("before set upcall\n");
+		
+		if (sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall) < 0) {
+			panic("failed to set pagefault upcall in fork()");
 		}
-		memmove(pPD, cPD);
-		*/
+		cprintf("this->env_pgfault_upcall: %p\n", thisenv->env_pgfault_upcall); 
 		for (unsigned pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
 			if ((uvpd[pn >> 10] & PTE_P) && (uvpt[pn] & PTE_P)) {
-				duppage(envid, pn);
+				if (duppage(envid, pn) < 0) {
+					panic("duppage call failed in fork()");
+				}
 			}
 		}
-		sys_page_alloc(envid, (void*) (UXSTACKTOP-PGSIZE), PTE_W | PTE_U | PTE_P);
-		sys_env_set_status(envid, ENV_RUNNABLE);
+		if (sys_page_alloc(envid, (void*) (UXSTACKTOP-PGSIZE), PTE_W | PTE_U | PTE_P) < 0) {
+			panic("sys_page_alloc failed");
+		}
+		if (sys_env_set_status(envid, ENV_RUNNABLE) < 0) {
+			panic("sys_env_set_status failed");
+		}
 	}
 	cprintf("our envid is: %d\n", envid);
 	return envid;

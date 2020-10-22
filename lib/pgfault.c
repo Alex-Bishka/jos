@@ -29,8 +29,12 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	if (_pgfault_handler == 0) {
 		// First time through!
 		envid_t envid = sys_getenvid();
-		sys_page_alloc(envid, (void*) (UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W); 
-		sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+		if (sys_page_alloc(envid, (void*) (UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W) < 0) {
+			panic("sys_page_alloc failed in set_pgfault_handler");
+		}
+		if (sys_env_set_pgfault_upcall(envid, _pgfault_upcall) < 0) {
+			panic("sys_env_set_pgfault_upcall failed in set_pgfault_handler");
+		}
 	}
 
 	// Save handler pointer for assembly to call.

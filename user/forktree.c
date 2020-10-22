@@ -21,6 +21,7 @@ forkchild(const char *cur, char branch)
 		forktree(nxt);
 		exit();
 	}
+	cprintf("parent lives after fork");
 }
 
 void
