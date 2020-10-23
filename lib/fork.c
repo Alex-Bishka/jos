@@ -44,7 +44,6 @@ duppage(envid_t envid, unsigned pn)
 {
 	int r;
 
-	// LAB 5: Your code here.
 	panic("duppage not implemented");
 	return 0;
 }
@@ -62,7 +61,6 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
-	// LAB 5: Your code here.
 	panic("fork not implemented");
 }
 

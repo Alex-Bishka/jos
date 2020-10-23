@@ -77,7 +77,6 @@ trap_init(void)
 		int isTrap;
 	};
 
-	// LAB 4: Your code here.
 	extern struct thstruct traphandlers[];
 
 	for (int i = 0; traphandlers[i].fnaddr != 0; i++) {
@@ -160,7 +159,6 @@ static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
-	// LAB 3: Your code here.
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -175,7 +173,6 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 7: Your code here.
 
-	// LAB 4: Your code here.
 	switch (tf->tf_trapno) {
 		case T_PGFLT:
 			page_fault_handler(tf);
@@ -222,7 +219,6 @@ trap(struct Trapframe *tf)
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
-		// LAB 5: Your code here.
 		lock_kernel();
 		assert(curenv);
 		
@@ -269,10 +265,6 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 	if (tf->tf_cs == GD_KT)
 		panic("page fault in kernel mode");
-
-	// LAB 4: Your code here.
-	
-	
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

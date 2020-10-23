@@ -152,13 +152,11 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
-	// Your code goes here:
 	pages = (struct PageInfo *) boot_alloc(npages * sizeof(*pages));
 	memset(pages, 0, npages * sizeof(*pages));
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
-	// LAB 3: Your code here.
 	envs = (struct Env *) boot_alloc(NENV * sizeof(*envs));
 	memset(envs, 0, ROUNDUP(NENV * sizeof(*envs), PGSIZE));
 
@@ -183,7 +181,6 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
 	boot_map_region(kern_pgdir, UPAGES, npages*sizeof(*pages), PADDR(pages), PTE_U | PTE_P);
 	
 	//////////////////////////////////////////////////////////////////////
@@ -192,7 +189,6 @@ mem_init(void)
 	// Permissions:
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
-	// LAB 3: Your code here.
 	boot_map_region(kern_pgdir, UENVS, NENV * sizeof(*envs), PADDR(envs), PTE_U | PTE_P);	
 
 	//////////////////////////////////////////////////////////////////////
@@ -205,7 +201,6 @@ mem_init(void)
 	//       the kernel overflows its stack, it will fault rather than
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
-	// Your code goes here:
 	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
@@ -215,7 +210,6 @@ mem_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-	// Your code goes here:
 
 	boot_map_region(kern_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
 
@@ -268,7 +262,6 @@ mem_init_mp(void)
 	//             Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	//
-	// LAB 5: Your code here:
 	for (int i = 0; i < NCPU; ++i) {
 		if (KSTACKTOP - (i + 1) * (KSTKSIZE + KSTKGAP) < MMIOLIM) {
 			panic("ran out of memory for our CPU stacks");

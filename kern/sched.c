@@ -28,7 +28,6 @@ sched_yield(void)
 	// no runnable environments, simply drop through to the code
 	// below to halt the cpu.
 
-	// LAB 5: Your code here.
 	int start = 0;
 	if (curenv) {
 		start = ENVX(curenv->env_id) + 1;

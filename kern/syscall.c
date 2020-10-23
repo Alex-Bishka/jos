@@ -83,7 +83,6 @@ sys_exofork(void)
 	// from the current environment -- but tweaked so sys_exofork
 	// will appear to return 0.
 
-	// LAB 5: Your code here.
 	struct Env* env;
 	int error;
 	if ((error = env_alloc(&env, curenv->env_id)))
@@ -127,7 +126,6 @@ sys_env_set_status(envid_t envid, int status)
 static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
-	// LAB 6: Your code here.
 	panic("sys_env_set_pgfault_upcall not implemented");
 }
 
@@ -164,8 +162,11 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (!(p = page_alloc(ALLOC_ZERO)))
 		return -E_NO_MEM;
 
-	if (page_insert(env->env_pgdir, p, va, perm))
+	if (page_insert(env->env_pgdir, p, va, perm)) {
+		// free alloc'ed page to prevent memory leak
+		page_free(p);
 		return -E_NO_MEM;
+	}
 
 	return 0;
 }
