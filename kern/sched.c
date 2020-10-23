@@ -32,6 +32,8 @@ sched_yield(void)
 	if (curenv) {
 		start = ENVX(curenv->env_id) + 1;
 	}
+	// This relies on modulo operator to wrap around
+	// We should always run this loop NENV - 1 times
 	for (int i = start; i < NENV + start; i++) {
 		if(envs[i % NENV].env_status == ENV_RUNNABLE) {
 			env_run(&envs[i % NENV]);
