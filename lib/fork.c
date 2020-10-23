@@ -24,7 +24,6 @@ pgfault(struct UTrapframe *utf)
 	//   Use the read-only page table mappings at uvpt
 	//   (see <inc/memlayout.h>).
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
-		cprintf("addr is: %p\n",addr);
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
@@ -39,10 +38,8 @@ pgfault(struct UTrapframe *utf)
 	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0) {
 		panic("pgfault could not allocate temp page");	
 	}
-	cprintf("PFTEMP: %x, addr: %x\n", PFTEMP, addr);
 	memmove(PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
 	if ((r = sys_page_map(0, PFTEMP, 0, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_U | PTE_W)) < 0 ) {
-		cprintf("error: %e\n", r);
 		panic("pgfault could not map temp page");
 	}
 	if ((r = sys_page_unmap(0, PFTEMP)) < 0) {
@@ -104,19 +101,16 @@ fork(void)
 	envid_t envid = sys_exofork();
 	
 	if (envid == 0) {
-		thisenv = &envs[sys_getenvid()];
-		cprintf("our thisenv is at: %d\n", thisenv);
+		thisenv = &envs[ENVX(sys_getenvid())];
 	} else {
 		// _pgfault_upcall will call the pgfault_handler that is in
 		// our globals, and since we set those before we dropped into
 		// the child's execution, that handler will be available as
 		// well.
-		cprintf("before set upcall\n");
 		
 		if (sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall) < 0) {
 			panic("failed to set pagefault upcall in fork()");
 		}
-		cprintf("this->env_pgfault_upcall: %p\n", thisenv->env_pgfault_upcall); 
 		for (unsigned pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
 			if ((uvpd[pn >> 10] & PTE_P) && (uvpt[pn] & PTE_P)) {
 				if (duppage(envid, pn) < 0) {
@@ -131,7 +125,6 @@ fork(void)
 			panic("sys_env_set_status failed");
 		}
 	}
-	cprintf("our envid is: %d\n", envid);
 	return envid;
 }
 
