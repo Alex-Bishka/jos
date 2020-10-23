@@ -20,19 +20,10 @@ pgfault(struct UTrapframe *utf)
 
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
-	// Hint:
-	//   Use the read-only page table mappings at uvpt
-	//   (see <inc/memlayout.h>).
-
-	// LAB 5: Your code here.
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
 	// page to the old page's address.
-	// Hint:
-	//   You should make three system calls.
-
-	// LAB 5: Your code here.
 
 	panic("pgfault not implemented");
 }
@@ -53,7 +44,6 @@ duppage(envid_t envid, unsigned pn)
 {
 	int r;
 
-	// LAB 5: Your code here.
 	panic("duppage not implemented");
 	return 0;
 }
@@ -68,16 +58,9 @@ duppage(envid_t envid, unsigned pn)
 // Returns: child's envid to the parent, 0 to the child, < 0 on error.
 // It is also OK to panic on error.
 //
-// Hint:
-//   Use uvpd, uvpt, and duppage.
-//   Remember to fix "thisenv" in the child process.
-//   Neither user exception stack should ever be marked copy-on-write,
-//   so you must allocate a new page for the child's user exception stack.
-//
 envid_t
 fork(void)
 {
-	// LAB 5: Your code here.
 	panic("fork not implemented");
 }
 

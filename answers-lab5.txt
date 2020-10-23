@@ -1,0 +1,24 @@
+1) The purpose of MPBOOTPHYS is so that we can translate the virtual address
+of MPENTRY_PADDR into a physical address that is reachable by our application 
+processors in real mode so that it can be executed. This is needed becauase
+MPENTRY_PADDR is linked at a location that is too high for our 16 bit
+processors to run.
+
+2) We need a separate kernel stack for each CPU, because the big kernel lock
+does not prevent another process from running and calling a trap. A scenario
+in which using a shared kernel would go wrong (even with the big kernel lock)
+is if we had an interrupt occur in the middle of a trap. This could cause the
+orignal environment in the kernel stack to be overwritten by the one from the
+interrupt, where the interrupt occurs before we apply the big kernel lock. 
+So, once the interrupt finishes we no longer have any information about the 
+previous trapframe.
+
+3) Each environment's page directory has the same mappings for virtual
+addresses that are above Kernbase. As long as we are using regions above
+kernbase, it does not matter which page directory we are using.
+
+4) The saving of the old environment's registers occurs in the trap call in
+trap.c, with the line: 
+	curenv->env_tf = *tf;
+This occurs so that we can correctly return back into user mode/that
+environment when we complete the trap call.

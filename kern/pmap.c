@@ -152,13 +152,11 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
-	// Your code goes here:
 	pages = (struct PageInfo *) boot_alloc(npages * sizeof(*pages));
 	memset(pages, 0, npages * sizeof(*pages));
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
-	// LAB 3: Your code here.
 	envs = (struct Env *) boot_alloc(NENV * sizeof(*envs));
 	memset(envs, 0, ROUNDUP(NENV * sizeof(*envs), PGSIZE));
 
@@ -183,7 +181,6 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
 	boot_map_region(kern_pgdir, UPAGES, npages*sizeof(*pages), PADDR(pages), PTE_U | PTE_P);
 	
 	//////////////////////////////////////////////////////////////////////
@@ -192,7 +189,6 @@ mem_init(void)
 	// Permissions:
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
-	// LAB 3: Your code here.
 	boot_map_region(kern_pgdir, UENVS, NENV * sizeof(*envs), PADDR(envs), PTE_U | PTE_P);	
 
 	//////////////////////////////////////////////////////////////////////
@@ -205,7 +201,6 @@ mem_init(void)
 	//       the kernel overflows its stack, it will fault rather than
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
-	// Your code goes here:
 	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
@@ -215,7 +210,6 @@ mem_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-	// Your code goes here:
 
 	boot_map_region(kern_pgdir, KERNBASE, (size_t) ((1ll<<32) - KERNBASE), 0, PTE_W | PTE_P);
 
@@ -268,7 +262,12 @@ mem_init_mp(void)
 	//             Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	//
-	// LAB 5: Your code here:
+	for (int i = 0; i < NCPU; ++i) {
+		if (KSTACKTOP - (i + 1) * (KSTKSIZE + KSTKGAP) < MMIOLIM) {
+			panic("ran out of memory for our CPU stacks");
+		}
+		boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE - i * (KSTKSIZE + KSTKGAP), KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
+	}
 
 }
 
@@ -312,9 +311,8 @@ page_init(void)
 	for (i = 0; i < npages; i++) {
 		physaddr_t pa = page2pa(&pages[i]);
 		void * va = KADDR(pa);
-		if (i == 0 || (pa >= IOPHYSMEM && va < boot_alloc(0))) {
+		if (i == 0 || (pa >= IOPHYSMEM && va < boot_alloc(0)) || pa == MPENTRY_PADDR) {
 			pages[i].pp_ref = 1;
-			
 		} else {
 			pages[i].pp_ref = 0;
 			pages[i].pp_link = page_free_list;
@@ -334,7 +332,6 @@ page_init(void)
 //
 // Returns NULL if out of free memory.
 //
-// Hint: use page2kva and memset
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
@@ -357,9 +354,6 @@ page_alloc(int alloc_flags)
 void
 page_free(struct PageInfo *pp)
 {
-	// Fill this function in
-	// Hint: You may want to panic if pp->pp_ref is nonzero or
-	// pp->pp_link is not NULL.
 	if (pp->pp_ref) {
 		panic("The page you are trying to free had a nonzero reference count");
 	}
@@ -392,17 +386,6 @@ page_decref(struct PageInfo* pp)
 //    - Otherwise, the new page's reference count is incremented,
 //	the page is cleared,
 //	and pgdir_walk returns a pointer into the new page table page.
-//
-// Hint 1: you can turn a PageInfo * into the physical address of the
-// page it refers to with page2pa() from kern/pmap.h.
-//
-// Hint 2: the x86 MMU checks permission bits in both the page directory
-// and the page table, so it's safe to leave permissions in the page
-// directory more permissive than strictly necessary.
-//
-// Hint 3: look at inc/mmu.h for useful macros that manipulate page
-// table and page directory entries.
-//
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
@@ -435,7 +418,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // above UTOP. As such, it should *not* change the pp_ref field on the
 // mapped pages.
 //
-// Hint: the TA solution uses pgdir_walk
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
@@ -467,9 +449,6 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 //   0 on success
 //   -E_NO_MEM, if page table couldn't be allocated
 //
-// Hint: The TA solution is implemented using pgdir_walk, page_remove,
-// and page2pa.
-//
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
@@ -495,8 +474,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 //
 // Return NULL if there is no page mapped at va.
 //
-// Hint: the TA solution uses pgdir_walk and pa2page.
-//
 struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
@@ -521,9 +498,6 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 //     (if such a PTE exists)
 //   - The TLB must be invalidated if you remove an entry from
 //     the page table.
-//
-// Hint: The TA solution is implemented using page_lookup,
-// 	tlb_invalidate, and page_decref.
 //
 void
 page_remove(pde_t *pgdir, void *va)
@@ -576,10 +550,13 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// handle if this reservation would overflow MMIOLIM (it's
 	// okay to simply panic if this happens).
 	//
-	// Hint: The staff solution uses boot_map_region.
-	//
-	// Your code here:
-	panic("mmio_map_region not implemented");
+	if (base + size > MMIOLIM) {
+		panic("mmio_map_region is out of memory bounds");
+	}
+	size = ROUNDUP(size, PGSIZE);
+	boot_map_region(kern_pgdir, base, size, pa, PTE_PCD | PTE_PWT | PTE_W);
+	base += size;
+	return (void*) (base - size);
 }
 
 static uintptr_t user_mem_check_addr;
