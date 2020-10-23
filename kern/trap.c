@@ -77,7 +77,6 @@ trap_init(void)
 		int isTrap;
 	};
 
-	// LAB 4: Your code here.
 	extern struct thstruct traphandlers[];
 
 	for (int i = 0; traphandlers[i].fnaddr != 0; i++) {
@@ -93,34 +92,6 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
-	// The example code here sets up the Task State Segment (TSS) and
-	// the TSS descriptor for CPU 0. But it is incorrect if we are
-	// running on other CPUs because each CPU has its own kernel stack.
-	// Fix the code so that it works for all CPUs.
-	//
-	// Hints:
-	//   - The macro "thiscpu" always refers to the current CPU's
-	//     struct CpuInfo;
-	//   - The ID of the current CPU is given by cpunum() or
-	//     thiscpu->cpu_id;
-	//   - Use "thiscpu->cpu_ts" as the TSS for the current CPU,
-	//     rather than the global "ts" variable;
-	//   - Use gdt[(GD_TSS0 >> 3) + i] for CPU i's TSS descriptor;
-	//   - You mapped the per-CPU kernel stacks in mem_init_mp()
-	//   - You won't want to load GD_TSS0: that's the GD_TSS for cpu 0.
-	//     The definition of gdt[] shows where the GD_TSSes are stored for
-	//     other cpus.
-	//
-	// ltr sets a 'busy' flag in the TSS selector, so if you
-	// accidentally load the same TSS on more than one CPU, you'll
-	// get a triple fault.  If you set up an individual CPU's TSS
-	// wrong, you may not get a fault until you try to return from
-	// user space on that CPU.
-	//
-	// LAB 5: Your code here:
-
-	// Setup a TSS so that we get the right stack
-	// when we trap to the kernel.
 	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - cpunum() * (KSTKSIZE + KSTKGAP);
 	thiscpu->cpu_ts.ts_ss0 = GD_KD;
 	thiscpu->cpu_ts.ts_iomb = sizeof(struct Taskstate);
@@ -188,7 +159,6 @@ static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
-	// LAB 3: Your code here.
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -203,7 +173,6 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 7: Your code here.
 
-	// LAB 4: Your code here.
 	switch (tf->tf_trapno) {
 		case T_PGFLT:
 			page_fault_handler(tf);
@@ -250,7 +219,6 @@ trap(struct Trapframe *tf)
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
-		// LAB 5: Your code here.
 		lock_kernel();
 		assert(curenv);
 		
@@ -297,10 +265,6 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 	if (tf->tf_cs == GD_KT)
 		panic("page fault in kernel mode");
-
-	// LAB 4: Your code here.
-	
-	
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

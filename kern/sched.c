@@ -28,14 +28,15 @@ sched_yield(void)
 	// no runnable environments, simply drop through to the code
 	// below to halt the cpu.
 
-	// LAB 5: Your code here.
 	int start = 0;
 	if (curenv) {
 		start = ENVX(curenv->env_id) + 1;
 	}
+	// This relies on modulo operator to wrap around
+	// We should always run this loop NENV - 1 times
 	for (int i = start; i < NENV + start; i++) {
 		if(envs[i % NENV].env_status == ENV_RUNNABLE) {
-			env_run(&envs[i % NENV]); //Synchronization??
+			env_run(&envs[i % NENV]);
 		}
 	}
 	if (curenv && curenv->env_status == ENV_RUNNING) {

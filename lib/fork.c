@@ -86,12 +86,6 @@ duppage(envid_t envid, unsigned pn)
 // Returns: child's envid to the parent, 0 to the child, < 0 on error.
 // It is also OK to panic on error.
 //
-// Hint:
-//   Use uvpd, uvpt, and duppage.
-//   Remember to fix "thisenv" in the child process.
-//   Neither user exception stack should ever be marked copy-on-write,
-//   so you must allocate a new page for the child's user exception stack.
-//
 envid_t
 fork(void)
 {
