@@ -293,16 +293,7 @@ page_fault_handler(struct Trapframe *tf)
 	// fault upcall and print the "user fault va" message below if there is
 	// none.  The remaining three checks can be combined into a single test.
 	//
-	// Hints:
-	//   user_mem_assert() and env_run() are useful here.
-	//   To change what the user environment runs, modify 'curenv->env_tf'
-	//   (the 'tf' variable points at 'curenv->env_tf').
 
-	// LAB 5: Your code here.
-	// user_mem_assert(struct Env *env, const void *va, size_t len, int perm) 
-	// env_run(struct Env *e)
-
-	// if (in UXSTACKTOP) => new stack frame
 	if (!(curenv->env_pgfault_upcall)) {
 		// Destroy the environment that caused the fault.
 		cprintf("[%08x] user fault va %08x ip %08x\n",
@@ -319,13 +310,6 @@ page_fault_handler(struct Trapframe *tf)
 		tf->tf_eflags,
 		tf->tf_esp,
 	};
-	//utf.utf_fault_va = fault_va;
-	//utf->utf_fault_va = 4;
-	//utf->utf_err = tf->tf_err;
-        //utf->utf_regs = tf->tf_regs;
-	//utf->utf_eip = tf->tf_eip;
-	//utf->utf_eflags = tf->tf_eflags;
-	//utf->utf_esp = tf->tf_esp;
 
 	void* esp = (void*) tf->tf_esp;
 	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)))) {
