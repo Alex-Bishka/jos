@@ -33,7 +33,7 @@
 	.long name 							;\
 	.long num 							;\
 	.long dpl							;\
-	.long 1
+	.long 0
 /* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
@@ -51,7 +51,7 @@
 	.long name 							;\
 	.long num 							;\
 	.long dpl 							;\
-	.long 1
+	.long 0
 
 .data
 	.globl traphandlers
