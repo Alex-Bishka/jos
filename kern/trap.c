@@ -174,6 +174,17 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 7: Your code here.
 
 	switch (tf->tf_trapno) {
+		case IRQ_OFFSET + IRQ_TIMER:
+			lapic_eoi();
+			sched_yield();
+		case IRQ_OFFSET + IRQ_KBD:
+			panic("IRQ_KBD is unhandled");	
+		case IRQ_OFFSET + IRQ_SERIAL:
+			panic("IRQ_SERIAL is unhandled");	
+		case IRQ_OFFSET + IRQ_IDE:
+			panic("IRQ_IDE is unhandled");	
+		case IRQ_OFFSET + IRQ_ERROR:
+			panic("IRQ_ERROR is unhandled");	
 		case T_PGFLT:
 			page_fault_handler(tf);
 		case T_BRKPT:
