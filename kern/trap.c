@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/memlayout.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -69,9 +70,19 @@ static const char *trapname(int trapno)
 void
 trap_init(void)
 {
-	extern struct Segdesc gdt[];
+	struct thstruct {
+		void (*fnaddr)();
+		int trapNo;
+		int dpl;
+		int isTrap;
+	};
 
-	// LAB 4: Your code here.
+	extern struct thstruct traphandlers[];
+
+	for (int i = 0; traphandlers[i].fnaddr != 0; i++) {
+		struct thstruct trap = traphandlers[i];
+		SETGATE(idt[trap.trapNo], trap.isTrap, GD_KT, trap.fnaddr, trap.dpl); 	
+	}
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -81,46 +92,18 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
-	// The example code here sets up the Task State Segment (TSS) and
-	// the TSS descriptor for CPU 0. But it is incorrect if we are
-	// running on other CPUs because each CPU has its own kernel stack.
-	// Fix the code so that it works for all CPUs.
-	//
-	// Hints:
-	//   - The macro "thiscpu" always refers to the current CPU's
-	//     struct CpuInfo;
-	//   - The ID of the current CPU is given by cpunum() or
-	//     thiscpu->cpu_id;
-	//   - Use "thiscpu->cpu_ts" as the TSS for the current CPU,
-	//     rather than the global "ts" variable;
-	//   - Use gdt[(GD_TSS0 >> 3) + i] for CPU i's TSS descriptor;
-	//   - You mapped the per-CPU kernel stacks in mem_init_mp()
-	//   - You won't want to load GD_TSS0: that's the GD_TSS for cpu 0.
-	//     The definition of gdt[] shows where the GD_TSSes are stored for
-	//     other cpus.
-	//
-	// ltr sets a 'busy' flag in the TSS selector, so if you
-	// accidentally load the same TSS on more than one CPU, you'll
-	// get a triple fault.  If you set up an individual CPU's TSS
-	// wrong, you may not get a fault until you try to return from
-	// user space on that CPU.
-	//
-	// LAB 5: Your code here:
-
-	// Setup a TSS so that we get the right stack
-	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
-	ts.ts_iomb = sizeof(struct Taskstate);
+	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - cpunum() * (KSTKSIZE + KSTKGAP);
+	thiscpu->cpu_ts.ts_ss0 = GD_KD;
+	thiscpu->cpu_ts.ts_iomb = sizeof(struct Taskstate);
 
 	// Initialize the TSS slot of the gdt.
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
+	gdt[(GD_TSS0 >> 3) + cpunum()] = SEG16(STS_T32A, (uint32_t) &(thiscpu->cpu_ts),
 					sizeof(struct Taskstate) - 1, 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+	gdt[(GD_TSS0 >> 3) + cpunum()].sd_s = 0;
 
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+	ltr(GD_TSS0 + (cpunum() * sizeof(*gdt)));
 
 	// Load the IDT
 	lidt(&idt_pd);
@@ -176,7 +159,6 @@ static void
 trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
-	// LAB 3: Your code here.
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -189,7 +171,27 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
-	// LAB 7: Your code here.
+	switch (tf->tf_trapno) {
+		case IRQ_OFFSET + IRQ_TIMER:
+			lapic_eoi();
+			sched_yield();
+		case IRQ_OFFSET + IRQ_KBD:
+			panic("IRQ_KBD is unhandled");
+		case IRQ_OFFSET + IRQ_SERIAL:
+			panic("IRQ_SERIAL is unhandled");
+		case IRQ_OFFSET + IRQ_IDE:
+			panic("IRQ_IDE is unhandled");
+		case IRQ_OFFSET + IRQ_ERROR:
+			panic("IRQ_ERROR is unhandled");
+		case T_PGFLT:
+			page_fault_handler(tf);
+		case T_BRKPT:
+			monitor(tf);
+			return;
+		case T_SYSCALL:
+			tf->tf_regs.reg_eax = (uint32_t) syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+			return;
+	}
 
 	// Handle keyboard and serial interrupts.
 	// LAB 5: Your code here.
@@ -229,9 +231,9 @@ trap(struct Trapframe *tf)
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
-		// LAB 5: Your code here.
+		lock_kernel();
 		assert(curenv);
-
+		
 		// Garbage collect if current enviroment is a zombie
 		if (curenv->env_status == ENV_DYING) {
 			env_free(curenv);
@@ -273,8 +275,8 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
-
-	// LAB 3: Your code here.
+	if (tf->tf_cs == GD_KT)
+		panic("page fault in kernel mode");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
@@ -303,17 +305,40 @@ page_fault_handler(struct Trapframe *tf)
 	// fault upcall and print the "user fault va" message below if there is
 	// none.  The remaining three checks can be combined into a single test.
 	//
-	// Hints:
-	//   user_mem_assert() and env_run() are useful here.
-	//   To change what the user environment runs, modify 'curenv->env_tf'
-	//   (the 'tf' variable points at 'curenv->env_tf').
 
-	// LAB 5: Your code here.
+	if (!(curenv->env_pgfault_upcall)) {
+		// Destroy the environment that caused the fault.
+		cprintf("[%08x] user fault va %08x ip %08x\n",
+			curenv->env_id, fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		env_destroy(curenv);
+	}
+	// We are doing a sanity-check here to make sure that the user can actually
+	// run the upcall they are telling us to send them to
+	// This is nice because then we panic instead of getting a weird page fault
+	user_mem_assert(curenv, curenv->env_pgfault_upcall, 1, PTE_P | PTE_U); 
+	struct UTrapframe utf = {
+		fault_va,
+		tf->tf_err,
+		tf->tf_regs,
+		tf->tf_eip,
+		tf->tf_eflags,
+		tf->tf_esp,
+	};
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+	void* esp = (void*) tf->tf_esp;
+	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)))) {
+		// the sizeof(int) gives us 4 bytes of scratch space at the top of UXSTACK
+		esp -= sizeof(int);
+	} else {
+		esp = (void*) UXSTACKTOP;
+	}
+	esp -= sizeof(utf);
+	// We are writing one utf onto the stack, so let's make sure that it fits
+	user_mem_assert(curenv, esp, sizeof(utf), PTE_W | PTE_P | PTE_U); 
+	*((struct UTrapframe*) esp) = utf;
+	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+	curenv->env_tf.tf_esp = (uintptr_t) esp;
+	env_run(curenv); 
 }
 
