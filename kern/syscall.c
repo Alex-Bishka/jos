@@ -83,7 +83,6 @@ sys_exofork(void)
 	// from the current environment -- but tweaked so sys_exofork
 	// will appear to return 0.
 
-	// LAB 5: Your code here.
 	struct Env* env;
 	int error;
 	if ((error = env_alloc(&env, curenv->env_id)))
@@ -105,13 +104,6 @@ sys_exofork(void)
 static int
 sys_env_set_status(envid_t envid, int status)
 {
-	// Hint: Use the 'envid2env' function from kern/env.c to translate an
-	// envid to a struct Env.
-	// You should set envid2env's third argument to 1, which will
-	// check whether the current environment has permission to set
-	// envid's status.
-
-	// LAB 5: Your code here.
 	if ((status !=  ENV_RUNNABLE) && (status != ENV_NOT_RUNNABLE))
 		return -E_INVAL;
 
@@ -134,8 +126,12 @@ sys_env_set_status(envid_t envid, int status)
 static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
-	// LAB 6: Your code here.
-	panic("sys_env_set_pgfault_upcall not implemented");
+	struct Env* env;
+	if (envid2env(envid, &env, 1))
+		return -E_BAD_ENV;
+	
+	env->env_pgfault_upcall = func;
+	return 0;
 }
 
 // Allocate a page of memory and map it at 'va' with permission
@@ -157,13 +153,6 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 static int
 sys_page_alloc(envid_t envid, void *va, int perm)
 {
-	// Hint: This function is a wrapper around page_alloc() and
-	//   page_insert() from kern/pmap.c.
-	//   Most of the new code you write should be to check the
-	//   parameters for correctness.
-	//   If page_insert() fails, remember to free the page you
-	//   allocated!
-
 	if (!((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL)))
 		return -E_INVAL;
 
@@ -178,8 +167,11 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (!(p = page_alloc(ALLOC_ZERO)))
 		return -E_NO_MEM;
 
-	if (page_insert(env->env_pgdir, p, va, perm))
+	if (page_insert(env->env_pgdir, p, va, perm)) {
+		// free alloc'ed page to prevent memory leak
+		page_free(p);
 		return -E_NO_MEM;
+	}
 
 	return 0;
 }
@@ -204,14 +196,6 @@ static int
 sys_page_map(envid_t srcenvid, void *srcva,
 	     envid_t dstenvid, void *dstva, int perm)
 {
-	// Hint: This function is a wrapper around page_lookup() and
-	//   page_insert() from kern/pmap.c.
-	//   Again, most of the new code you write should be to check the
-	//   parameters for correctness.
-	//   Use the third argument to page_lookup() to
-	//   check the current permissions on the page.
-
-	// LAB 5: Your code here.
 	if (!((perm & PTE_U) && (perm & PTE_P) && ((perm | PTE_SYSCALL) == PTE_SYSCALL)))
 		return -E_INVAL;
 
@@ -234,7 +218,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	if (!(p = page_lookup(srcenv->env_pgdir, srcva, &pte)))
 		return -E_INVAL; 
 
-	if ((*pte & PTE_W) != (perm & PTE_W))
+	if ((!(*pte & PTE_W)) && (perm & PTE_W))
 		return -E_INVAL;
 
 	if (page_insert(dstenv->env_pgdir, p, dstva, perm)) 
@@ -253,9 +237,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 static int
 sys_page_unmap(envid_t envid, void *va)
 {
-	// Hint: This function is a wrapper around page_remove().
-
-	// LAB 5: Your code here.
 	if (((int) va >= UTOP) || ((int) va % PGSIZE))
 		return -E_INVAL;
 
@@ -283,8 +264,7 @@ sys_page_unmap(envid_t envid, void *va)
 //    env_ipc_value is set to the 'value' parameter;
 //    env_ipc_perm is set to 'perm' if a page was transferred, 0 otherwise.
 // The target environment is marked runnable again, returning 0
-// from the paused sys_ipc_recv system call.  (Hint: does the
-// sys_ipc_recv function ever actually return?)
+// from the paused sys_ipc_recv system call. 
 //
 // If the sender wants to send a page but the receiver isn't asking for one,
 // then no page mapping is transferred, but no error occurs.
@@ -337,7 +317,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 {
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
-	// LAB 3: Your code here.
 
 	switch (syscallno) {
 		case SYS_cputs:
@@ -362,6 +341,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_page_map(a1, (void*) a2, a3, (void*) a4, a5); 
 		case SYS_page_unmap:
 			return sys_page_unmap(a1, (void*) a2); 
+		case SYS_env_set_pgfault_upcall:
+			return sys_env_set_pgfault_upcall(a1, (void*) a2);
 		default:
 			return -E_INVAL;
 	}
