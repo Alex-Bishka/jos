@@ -171,20 +171,18 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
-	// LAB 7: Your code here.
-
 	switch (tf->tf_trapno) {
 		case IRQ_OFFSET + IRQ_TIMER:
 			lapic_eoi();
 			sched_yield();
 		case IRQ_OFFSET + IRQ_KBD:
-			panic("IRQ_KBD is unhandled");	
+			panic("IRQ_KBD is unhandled");
 		case IRQ_OFFSET + IRQ_SERIAL:
-			panic("IRQ_SERIAL is unhandled");	
+			panic("IRQ_SERIAL is unhandled");
 		case IRQ_OFFSET + IRQ_IDE:
-			panic("IRQ_IDE is unhandled");	
+			panic("IRQ_IDE is unhandled");
 		case IRQ_OFFSET + IRQ_ERROR:
-			panic("IRQ_ERROR is unhandled");	
+			panic("IRQ_ERROR is unhandled");
 		case T_PGFLT:
 			page_fault_handler(tf);
 		case T_BRKPT:
@@ -193,7 +191,7 @@ trap_dispatch(struct Trapframe *tf)
 		case T_SYSCALL:
 			tf->tf_regs.reg_eax = (uint32_t) syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 			return;
-	}			
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
