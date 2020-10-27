@@ -20,9 +20,6 @@ pgfault(struct UTrapframe *utf)
 
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
-	// Hint:
-	//   Use the read-only page table mappings at uvpt
-	//   (see <inc/memlayout.h>).
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
 		panic("page associated with faulting virtual addr is not present");
 	}
@@ -33,8 +30,6 @@ pgfault(struct UTrapframe *utf)
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
 	// page to the old page's address.
-	// Hint:
-	//   You should make three system calls.
 	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0) {
 		panic("pgfault could not allocate temp page");	
 	}

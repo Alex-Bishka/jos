@@ -310,7 +310,10 @@ page_fault_handler(struct Trapframe *tf)
 		print_trapframe(tf);
 		env_destroy(curenv);
 	}
-	user_mem_assert(curenv, curenv->env_pgfault_upcall, 0, PTE_P | PTE_U); 
+	// We are doing a sanity-check here to make sure that the user can actually
+	// run the upcall they are telling us to send them to
+	// This is nice because then we panic instead of getting a weird page fault
+	user_mem_assert(curenv, curenv->env_pgfault_upcall, 1, PTE_P | PTE_U); 
 	struct UTrapframe utf = {
 		fault_va,
 		tf->tf_err,
@@ -324,13 +327,12 @@ page_fault_handler(struct Trapframe *tf)
 	if ((esp < (void*) UXSTACKTOP) && (esp > (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)))) {
 		// the sizeof(int) gives us 4 bytes of scratch space at the top of UXSTACK
 		esp -= sizeof(int);
-	} else if (esp < (void*) (UXSTACKTOP - PGSIZE + sizeof(int) + sizeof(utf)) && esp > (void*) (UXSTACKTOP - PGSIZE * 2)) {
-		env_destroy(curenv);
 	} else {
 		esp = (void*) UXSTACKTOP;
 	}
 	esp -= sizeof(utf);
-	user_mem_assert(curenv, esp, 0, PTE_W | PTE_P | PTE_U); 
+	// We are writing one utf onto the stack, so let's make sure that it fits
+	user_mem_assert(curenv, esp, sizeof(utf), PTE_W | PTE_P | PTE_U); 
 	*((struct UTrapframe*) esp) = utf;
 	curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 	curenv->env_tf.tf_esp = (uintptr_t) esp;
