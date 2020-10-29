@@ -148,17 +148,10 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 		return -E_INVAL;
 	}
 	if (filebno < NDIRECT) {
-		if ((*ppdiskbno = f->f_direct[filebno]) != 0) {
-			return 0;
-		}
-		int blockno;
-		if ((blockno = alloc_block()) == -E_NO_DISK) {
-			return -E_NO_DISK;
-		}
-		f->f_direct[filebno] = blockno;
-		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
-		*ppdiskno = blockno;
+		*ppdiskbno = &f->f_direct[filebno];
+		return 0;
 	}
+	filebno -= NDIRECT;
 	if (!f->f_indirect) {
 		if (!alloc) {
 			return -E_NOT_FOUND;
@@ -169,16 +162,12 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 		}
 		f->f_indirect = blockno;
 		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
-		if ((blockno = alloc_block()) == -E_NO_DISK) {
-			return -E_NO_DISK;
-		}
-		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
 		// TO REMEMBER:
 		// do we need to alloc direct blocks?
 		//
 		// math: start at start of indirect block, then go to corect offset
-		*(blockno * BLKSIZE + DISKMAP + (filebno - NDIRECT) * sizeof(uintptr_t))
 	}
+	*ppdiskbno = blockno * BLKSIZE + DISKMAP + filebno * sizeof(uintptr_t);
 
 }
 
