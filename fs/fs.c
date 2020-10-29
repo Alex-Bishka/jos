@@ -61,8 +61,18 @@ alloc_block(void)
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
 
-	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	for (int i = 0; i < (super->s_nblocks / 32); i++) {
+		if (bitmap[i]) {
+			for (int bit = 0; bit < 32; bit++) {
+				if (bitmap[i] & (1 << bit)) {
+					int blockno = i*32 + bit;
+					flush_block((void*) (blockno * BLKSIZE + DISKMAP));
+					bitmap[i] &= ~(1 << bit);
+					return blockno;
+				}
+			}
+		}
+	}
 	return -E_NO_DISK;
 }
 
@@ -134,8 +144,42 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-       // LAB 5: Your code here.
-       panic("file_block_walk not implemented");
+	if (filebno >= NDIRECT + NINDIRECT) {
+		return -E_INVAL;
+	}
+	if (filebno < NDIRECT) {
+		if ((*ppdiskbno = f->f_direct[filebno]) != 0) {
+			return 0;
+		}
+		int blockno;
+		if ((blockno = alloc_block()) == -E_NO_DISK) {
+			return -E_NO_DISK;
+		}
+		f->f_direct[filebno] = blockno;
+		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
+		*ppdiskno = blockno;
+	}
+	if (!f->f_indirect) {
+		if (!alloc) {
+			return -E_NOT_FOUND;
+		}
+		int blockno;
+		if ((blockno = alloc_block()) == -E_NO_DISK) {
+			return -E_NO_DISK;
+		}
+		f->f_indirect = blockno;
+		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
+		if ((blockno = alloc_block()) == -E_NO_DISK) {
+			return -E_NO_DISK;
+		}
+		memset(blockno * BLKSIZE + DISKMAP, 0, BLKSIZE);
+		// TO REMEMBER:
+		// do we need to alloc direct blocks?
+		//
+		// math: start at start of indirect block, then go to corect offset
+		*(blockno * BLKSIZE + DISKMAP + (filebno - NDIRECT) * sizeof(uintptr_t))
+	}
+
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -167,7 +211,7 @@ dir_lookup(struct File *dir, const char *name, struct File **file)
 
 	// Search dir for name.
 	// We maintain the invariant that the size of a directory-file
-	// is always a multiple of the file system's block size.
+	// is alw6ays a multiple of the file system's block size.
 	assert((dir->f_size % BLKSIZE) == 0);
 	nblock = dir->f_size / BLKSIZE;
 	for (i = 0; i < nblock; i++) {
