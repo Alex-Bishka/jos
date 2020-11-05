@@ -176,9 +176,11 @@ trap_dispatch(struct Trapframe *tf)
 			lapic_eoi();
 			sched_yield();
 		case IRQ_OFFSET + IRQ_KBD:
-			panic("IRQ_KBD is unhandled");
+			kbd_intr();
+			return;
 		case IRQ_OFFSET + IRQ_SERIAL:
-			panic("IRQ_SERIAL is unhandled");
+			serial_intr();
+			return;
 		case IRQ_OFFSET + IRQ_IDE:
 			panic("IRQ_IDE is unhandled");
 		case IRQ_OFFSET + IRQ_ERROR:

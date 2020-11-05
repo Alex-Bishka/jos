@@ -21,6 +21,9 @@ pgfault(struct UTrapframe *utf)
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
+		cprintf("here is some interesting stuff pte: %x\n addr: %x\n", uvpt[PGNUM(addr)], addr);
+		cprintf("this is the eip: %x\n", utf->utf_eip);
+		cprintf("env id (pgfautl): %x\n", sys_getenvid()); 
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
@@ -56,6 +59,9 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
+	if (uvpt[pn] & PTE_SHARE) {
+		return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), uvpt[pn] & PTE_SYSCALL);
+	}
 	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
 		int r;
 		if ((r=sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U)) < 0) {
@@ -65,9 +71,8 @@ duppage(envid_t envid, unsigned pn)
 			r = sys_page_map(0, (void*) (pn*PGSIZE), 0, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U);
 		}
 		return r;
-	} else {
-		return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_P | PTE_U);
 	}
+	return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_P | PTE_U);
 }
 
 //
@@ -90,6 +95,8 @@ fork(void)
 	
 	if (envid == 0) {
 		thisenv = &envs[ENVX(sys_getenvid())];
+		cprintf("thisenv (fork) id: %x\n", sys_getenvid());
+		cprintf("thisenv addr: %x\n", thisenv);
 	} else {
 		// _pgfault_upcall will call the pgfault_handler that is in
 		// our globals, and since we set those before we dropped into

@@ -126,8 +126,10 @@ spawn(const char *prog, const char **argv)
 	fd = -1;
 
 	// Copy shared library state.
+	cprintf("test2\n");
 	if ((r = copy_shared_pages(child)) < 0)
 		panic("copy_shared_pages: %e", r);
+	cprintf("test2\n");
 
 	child_tf.tf_eflags |= FL_IOPL_3;   // devious: see user/faultio.c
 	if ((r = sys_env_set_trapframe(child, &child_tf)) < 0)
@@ -136,6 +138,7 @@ spawn(const char *prog, const char **argv)
 	if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %e", r);
 
+	cprintf("test2\n");
 	return child;
 
 error:
@@ -154,6 +157,7 @@ spawnl(const char *prog, const char *arg0, ...)
 	// The contract of the function guarantees that the last
 	// argument will always be NULL, and that none of the other
 	// arguments will be NULL.
+	cprintf("test\n");
 	int argc=0;
 	va_list vl;
 	va_start(vl, arg0);
@@ -172,6 +176,7 @@ spawnl(const char *prog, const char *arg0, ...)
 	for(i=0;i<argc;i++)
 		argv[i+1] = va_arg(vl, const char *);
 	va_end(vl);
+	cprintf("test\n");
 	return spawn(prog, argv);
 }
 
@@ -301,7 +306,14 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 static int
 copy_shared_pages(envid_t child)
 {
-	// LAB 5: Your code here.
+	int r;
+	for (unsigned pn = 0; pn * PGSIZE < USTACKTOP; ++pn) {
+		if ((uvpd[pn >> 10] & PTE_P) && (uvpt[pn] & PTE_P) && (uvpt[pn] & PTE_SHARE)) {
+			if ((r=sys_page_map(0, (void*) (pn*PGSIZE), child, (void*) (pn*PGSIZE), uvpt[pn] & PTE_SYSCALL)) < 0) {
+				return r;
+			}
+		}
+	}
 	return 0;
 }
 
