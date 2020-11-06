@@ -33,10 +33,17 @@ sched_yield(void)
 	if (curenv) {
 		start = ENVX(curenv->env_id) + 1;
 	}
+	if (curenv && curenv->env_id ) {
+		//cprintf("WE'RE HERE in sched yield with envid: %x!\n", curenv->env_id);
+	}
 	// This relies on modulo operator to wrap around
 	// We should always run this loop NENV - 1 times
 	for (int i = start; i < NENV + start; i++) {
 		if(envs[i % NENV].env_status == ENV_RUNNABLE) {
+			if (envs[i % NENV].env_id == 0x1003) {
+				cprintf("We are about to run environment 0x1003\n");
+
+			}
 			env_run(&envs[i % NENV]);
 		}
 	}

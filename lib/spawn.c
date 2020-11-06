@@ -19,9 +19,11 @@ static int copy_shared_pages(envid_t child);
 int
 spawn(const char *prog, const char **argv)
 {
+	cprintf("We're spawnin'\n");
 	unsigned char elf_buf[512];
 	struct Trapframe child_tf;
 	envid_t child;
+	cprintf("test2\n");
 
 	int fd, i, r;
 	struct Elf *elf;
@@ -85,9 +87,13 @@ spawn(const char *prog, const char **argv)
 	//
 	//   - Start the child process running with sys_env_set_status().
 
-	if ((r = open(prog, O_RDONLY)) < 0)
+	cprintf("test2\n");
+	if ((r = open(prog, O_RDONLY)) < 0) {
+		cprintf("error: %e\n", r);
 		return r;
+	}
 	fd = r;
+	cprintf("test2\n");
 
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
@@ -129,7 +135,6 @@ spawn(const char *prog, const char **argv)
 	cprintf("test2\n");
 	if ((r = copy_shared_pages(child)) < 0)
 		panic("copy_shared_pages: %e", r);
-	cprintf("test2\n");
 
 	child_tf.tf_eflags |= FL_IOPL_3;   // devious: see user/faultio.c
 	if ((r = sys_env_set_trapframe(child, &child_tf)) < 0)
@@ -138,7 +143,6 @@ spawn(const char *prog, const char **argv)
 	if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %e", r);
 
-	cprintf("test2\n");
 	return child;
 
 error:
