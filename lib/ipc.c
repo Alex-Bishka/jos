@@ -40,6 +40,7 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 	if (!thisenv) {
 		cprintf("thisenv id (ipc_recv): %x\n", sys_getenvid());
 		cprintf("thisenv (ip_recv): %x\n", thisenv);
+		cprintf("thisenv addr (ip_recv): %x\n", &thisenv);
 		panic("found the problem\n");
 	}
 	return thisenv->env_ipc_value;

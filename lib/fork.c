@@ -96,7 +96,8 @@ fork(void)
 	if (envid == 0) {
 		thisenv = &envs[ENVX(sys_getenvid())];
 		cprintf("thisenv (fork) id: %x\n", sys_getenvid());
-		cprintf("thisenv addr: %x\n", thisenv);
+		cprintf("thisenv value: %x\n", thisenv);
+		cprintf("thisenv addr: %x\n", &thisenv);
 	} else {
 		// _pgfault_upcall will call the pgfault_handler that is in
 		// our globals, and since we set those before we dropped into
