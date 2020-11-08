@@ -24,6 +24,7 @@ pgfault(struct UTrapframe *utf)
 		cprintf("here is some interesting stuff pte: %x\n addr: %x\n", uvpt[PGNUM(addr)], addr);
 		cprintf("this is the eip: %x\n", utf->utf_eip);
 		cprintf("env id (pgfautl): %x\n", sys_getenvid()); 
+		//1004 dies here
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
