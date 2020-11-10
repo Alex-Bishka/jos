@@ -74,18 +74,13 @@ open(const char *path, int mode)
 	if (strlen(path) >= MAXPATHLEN)
 		return -E_BAD_PATH;
 	
-	cprintf("please please1");
-
 	if ((r = fd_alloc(&fd)) < 0)
 		return r;
-	cprintf("please after");
 
-	if (!thisenv) panic("HAHAHHAHA GOTCHA");
 	strcpy(fsipcbuf.open.req_path, path);
 	fsipcbuf.open.req_omode = mode;
 
 	if ((r = fsipc(FSREQ_OPEN, fd)) < 0) {
-		cprintf("We failed our fsipc\n");
 		fd_close(fd, 0);
 		return r;
 	}

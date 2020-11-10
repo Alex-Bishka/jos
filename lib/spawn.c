@@ -19,11 +19,9 @@ static int copy_shared_pages(envid_t child);
 int
 spawn(const char *prog, const char **argv)
 {
-	cprintf("We're spawnin'\n");
 	unsigned char elf_buf[512];
 	struct Trapframe child_tf;
 	envid_t child;
-	cprintf("test2\n");
 
 	int fd, i, r;
 	struct Elf *elf;
@@ -87,13 +85,11 @@ spawn(const char *prog, const char **argv)
 	//
 	//   - Start the child process running with sys_env_set_status().
 
-	cprintf("test2\n");
 	if ((r = open(prog, O_RDONLY)) < 0) {
 		cprintf("error: %e\n", r);
 		return r;
 	}
 	fd = r;
-	cprintf("test2\n");
 
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
@@ -132,7 +128,6 @@ spawn(const char *prog, const char **argv)
 	fd = -1;
 
 	// Copy shared library state.
-	cprintf("test2\n");
 	if ((r = copy_shared_pages(child)) < 0)
 		panic("copy_shared_pages: %e", r);
 
@@ -161,7 +156,6 @@ spawnl(const char *prog, const char *arg0, ...)
 	// The contract of the function guarantees that the last
 	// argument will always be NULL, and that none of the other
 	// arguments will be NULL.
-	cprintf("test\n");
 	int argc=0;
 	va_list vl;
 	va_start(vl, arg0);
@@ -180,7 +174,6 @@ spawnl(const char *prog, const char *arg0, ...)
 	for(i=0;i<argc;i++)
 		argv[i+1] = va_arg(vl, const char *);
 	va_end(vl);
-	cprintf("test\n");
 	return spawn(prog, argv);
 }
 

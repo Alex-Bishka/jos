@@ -21,10 +21,6 @@ pgfault(struct UTrapframe *utf)
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
-		cprintf("here is some interesting stuff pte: %x\n addr: %x\n", uvpt[PGNUM(addr)], addr);
-		cprintf("this is the eip: %x\n", utf->utf_eip);
-		cprintf("env id (pgfautl): %x\n", sys_getenvid()); 
-		//1004 dies here
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
@@ -96,9 +92,6 @@ fork(void)
 	
 	if (envid == 0) {
 		thisenv = &envs[ENVX(sys_getenvid())];
-		cprintf("thisenv (fork) id: %x\n", sys_getenvid());
-		cprintf("thisenv value: %x\n", thisenv);
-		cprintf("thisenv addr: %x\n", &thisenv);
 	} else {
 		// _pgfault_upcall will call the pgfault_handler that is in
 		// our globals, and since we set those before we dropped into

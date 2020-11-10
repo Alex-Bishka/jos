@@ -22,32 +22,20 @@
 int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
-	if (!thisenv) panic("PROBLEM FOUND1!!!\n");
 	if (!pg) {
 		pg = (void*) UTOP;
 	}
-	if (!thisenv) panic("PROBLEM FOUND2!!!\n");
 	int r;
 	if ((r = sys_ipc_recv(pg)) < 0) {
 		*from_env_store = 0;
 		*perm_store = 0;
 		return r;
 	}
-	//1003 dies here
-	if (!thisenv) panic("PROBLEM FOUND3!!!\n");
 	if (from_env_store) {
 		*from_env_store = thisenv->env_ipc_from;
 	}
-	if (!thisenv) panic("PROBLEM FOUND4!!!\n");
 	if (perm_store && thisenv->env_ipc_perm) {
 		*perm_store = thisenv->env_ipc_perm;
-	}
-	if (!thisenv) panic("PROBLEM FOUND5!!!\n");
-	if (!thisenv) {
-		cprintf("thisenv id (ipc_recv): %x\n", sys_getenvid());
-		cprintf("thisenv (ip_recv): %x\n", thisenv);
-		cprintf("thisenv addr (ip_recv): %x\n", &thisenv);
-		panic("found the problem\n");
 	}
 	return thisenv->env_ipc_value;
 }
