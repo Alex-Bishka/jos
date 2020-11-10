@@ -346,6 +346,7 @@ page_alloc(int alloc_flags)
 		memset(page2kva(pp), 0, PGSIZE);
 	}
 	pp->pp_link = NULL;
+	if (page2pa(pp) == 0) cprintf("We are about to return 0 in page_alloc\n");
 	return pp;
 }
 
@@ -373,6 +374,7 @@ page_free(struct PageInfo *pp)
 void
 page_decref(struct PageInfo* pp)
 {
+	if (page2pa(pp) == 0) cprintf("We are about to decrement physical page 0\n");
 	if (--pp->pp_ref == 0)
 		page_free(pp);
 }
@@ -464,6 +466,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	}
 	physaddr_t pa = page2pa(pp);
 	*pte = pa | perm | PTE_P;
+	if (!pa) cprintf("we inserted a page at paddr 0 :( \n");
 	return 0;
 }
 
@@ -481,6 +484,9 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	pte_t *pte;
 	if (!(pte = pgdir_walk(pgdir, va, 0))) {
+		return NULL;
+	}
+	if (!(*pte & PTE_P)) {
 		return NULL;
 	}
 	if (pte_store) {
@@ -506,6 +512,13 @@ page_remove(pde_t *pgdir, void *va)
 {
 	pte_t *pte;
 	struct PageInfo * pp = page_lookup(pgdir, va, &pte);
+	if (pp == 0) {
+		cprintf("we caught something!\n");
+		return;
+	}
+	if (page2pa(pp) == 0) {
+		cprintf("page_remove called with a va of %x which points to a paddr of 0\n", va);
+	}
 	page_decref(pp);
 	*pte = 0;
 	tlb_invalidate(pgdir, va);
