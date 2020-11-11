@@ -46,8 +46,6 @@ bc_pgfault(struct UTrapframe *utf)
 	// of the block from the disk into that page.
 	// Hint: first round addr to page boundary. fs/ide.c has code to read
 	// the disk.
-	//
-	// LAB 5: you code here:
 	if ((r = sys_page_alloc(thisenv->env_id, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
 		panic("in bc_pgfault, sys_page_alloc: %e", r);
 
@@ -56,8 +54,6 @@ bc_pgfault(struct UTrapframe *utf)
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
-	
-	// TODO: WE DIDN'T WRITE THIS, BUT IT LOOKS LIKE IT SHOULD HAVE ROUNDED DOWN ADDR
 	if ((r = sys_page_map(0, ROUNDDOWN(addr, PGSIZE), 0, ROUNDDOWN(addr, PGSIZE), uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
 		panic("in bc_pgfault, sys_page_map: %e", r);
 
@@ -83,11 +79,10 @@ flush_block(void *addr)
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("flush_block of bad va %08x", addr);
 
-	// LAB 5: Your code here.
 	if (va_is_mapped(addr) && va_is_dirty(addr)) {
 		int r;
 		if ( (r = ide_write(((uint32_t) ROUNDDOWN(addr, PGSIZE) - DISKMAP) / SECTSIZE, ROUNDDOWN(addr, PGSIZE), PGSIZE / SECTSIZE)) < 0) {
-			panic("in flush_block, ide_write: %e", r); 
+			panic("in flush_block, ide_write: %e", r);
 		}
 		if ((r = sys_page_map(0, ROUNDDOWN(addr,PGSIZE), 0, ROUNDDOWN(addr,PGSIZE), uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
 			panic("in flush_block, sys_page_map: %e", r);

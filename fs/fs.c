@@ -162,10 +162,6 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 		}
 		f->f_indirect = blockno;
 		memset(diskaddr(blockno), 0, BLKSIZE);
-		// TO REMEMBER:
-		// do we need to alloc direct blocks?
-		//
-		// math: start at start of indirect block, then go to corect offset
 	}
 	*ppdiskbno = diskaddr(f->f_indirect) + filebno * sizeof(uintptr_t);
 	return 0;
@@ -211,7 +207,7 @@ dir_lookup(struct File *dir, const char *name, struct File **file)
 
 	// Search dir for name.
 	// We maintain the invariant that the size of a directory-file
-	// is alw6ays a multiple of the file system's block size.
+	// is always a multiple of the file system's block size.
 	assert((dir->f_size % BLKSIZE) == 0);
 	nblock = dir->f_size / BLKSIZE;
 	for (i = 0; i < nblock; i++) {

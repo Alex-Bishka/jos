@@ -86,7 +86,6 @@ spawn(const char *prog, const char **argv)
 	//   - Start the child process running with sys_env_set_status().
 
 	if ((r = open(prog, O_RDONLY)) < 0) {
-		cprintf("error: %e\n", r);
 		return r;
 	}
 	fd = r;

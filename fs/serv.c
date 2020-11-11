@@ -215,8 +215,8 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	if (debug)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
-	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)                                  
-		return r;  
+	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
+		return r;
 	if ((r = file_read(o->o_file, ret->ret_buf, req->req_n, o->o_fd->fd_offset)) < 0) {
 		return r;
 	}
@@ -354,7 +354,7 @@ umain(int argc, char **argv)
 
 	serve_init();
 	fs_init();
-        fs_test();
+	fs_test();
 	serve();
 }
 
