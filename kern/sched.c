@@ -29,8 +29,20 @@ sched_yield(void)
 	// no runnable environments, simply drop through to the code
 	// below to halt the cpu.
 
-	// LAB 5: Your code here.
-
+	int start = 0;
+	if (curenv) {
+		start = ENVX(curenv->env_id) + 1;
+	}
+	// This relies on modulo operator to wrap around
+	// We should always run this loop NENV - 1 times
+	for (int i = start; i < NENV + start; i++) {
+		if(envs[i % NENV].env_status == ENV_RUNNABLE) {
+			env_run(&envs[i % NENV]);
+		}
+	}
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
 	// sched_halt never returns
 	sched_halt();
 }
@@ -75,8 +87,7 @@ sched_halt(void)
 		"movl %0, %%esp\n"
 		"pushl $0\n"
 		"pushl $0\n"
-		// Uncomment the following line for exercise 1 in Lab 7
-		//"sti\n"
+		"sti\n"
 		"1:\n"
 		"hlt\n"
 		"jmp 1b\n"

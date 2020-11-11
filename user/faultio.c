@@ -6,7 +6,7 @@
 void
 umain(int argc, char **argv)
 {
-        int x, r;
+	int x, r;
 	int nsecs = 1;
 	int secno = 0;
 	int diskno = 1;
@@ -18,5 +18,5 @@ umain(int argc, char **argv)
 	// fault, because user-level code shouldn't be able to use the io space.
 	outb(0x1F6, 0xE0 | (1<<4));
 
-        cprintf("%s: made it here --- bug\n");
+	cprintf("%s: made it here --- bug\n");
 }
