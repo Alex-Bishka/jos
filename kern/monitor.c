@@ -6,10 +6,12 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 #include <inc/x86.h>
+#include <inc/error.h>
 
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -25,6 +27,8 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Display the current stack backtrace", mon_backtrace },
+	{ "showmappings", "Display physical page mappings for a range of virtual addresses", mon_showmappings },
+	{ "setperms", "Set the permissions of a virtual address", mon_setperms },
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -77,6 +81,64 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+static bool
+parseAddr(char* in, uintptr_t** addr_store) {
+	if (in[0] == '0' && in[1] == 'x') {
+		uintptr_t addr = 0;
+		char ch;
+		for (int i = 2; i < strlen(in); ++i) {
+			addr = addr << 4;
+			ch = in[i];
+			if (ch >= '0' && ch <= '9') addr += ch - '0';
+			if (ch >= 'a' && ch <= 'f') addr += 10 + ch - 'a';
+			if (ch >= 'A' && ch <= 'F') addr += 10 + ch - 'A';
+		}
+		*addr_store = &addr;
+		return true;
+	}
+	cprintf("Unable to parse addr given by %s.\n", in);
+	return false;
+}
+
+int
+mon_showmappings(int argc, char **argv, struct Trapframe *tf)
+{
+	if (argc != 3) {
+		cprintf("Unable to parse request...\n");
+		cprintf("Please provide two space-separated virtual addresses starting with 0x, indicating the start and stop of the range\n");
+		return 0;
+	}
+	uintptr_t* addrptr1;
+	if (!parseAddr(argv[1], &addrptr1)) {
+		cprintf("Parse failure for address argument 1... exiting\n");
+		return 0;
+	}
+	uintptr_t addr1 = *addrptr1;
+	uintptr_t* addrptr2;
+	if (!parseAddr(argv[2], &addrptr2)) {
+		cprintf("Parse failure for address argument 2... exiting\n");
+		return 0;
+	}
+	uintptr_t addr2 = *addrptr2;
+	cprintf("Successfully parsed virtual addresses. We will attempt to give information between these two addresses:\n");
+	cprintf("From: 0x%x\nTo: 0x%x\n", addr1, addr2);
+	addr1 = ROUNDDOWN(addr1, PGSIZE);
+	pte_t* pte;
+	cprintf("We will display page-aligned virtual addresses, followed by interesting details about them\n");
+	for (; addr1 <= addr2; addr1 += PGSIZE) {
+		cprintf("0x%x: ", addr1);
+		pte = pgdir_walk(kern_pgdir, (void *) addr1, 0);
+		if (!pte) {
+			cprintf("No pte\n");
+		} else if (!(*pte & PTE_P)) {
+			cprintf("No page present\n");
+		} else {
+			cprintf("Page mapped at physical address 0x%x, with hex permissions %x\n", (*pte & ~0xfff), (*pte & 0xfff));
+		}
+		if (addr1 == -PGSIZE) return 0;
+	}
+	return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/
