@@ -172,6 +172,7 @@ cga_putc(int c)
 	// Light_Green, Light_Cyan, Light_Red, Light_Magenta, Yellow, White.
 	// 
 	// Reading the actual output is a little bit tricky to the eye...
+	// take a look at color_challenge_screenshot.png in our git repo (if you dare)
 	if (!(c & ~0xFF))
 		c |= c << 8;
 
