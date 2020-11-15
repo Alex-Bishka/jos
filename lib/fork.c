@@ -85,7 +85,6 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
-	// LAB 5: Your code here.
 	set_pgfault_handler(pgfault);
 	
 	envid_t envid = sys_exofork();
