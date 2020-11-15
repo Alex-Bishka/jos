@@ -237,8 +237,6 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	// You will set e->env_tf.tf_eip later.
 
 	// Enable interrupts while in user mode.
-	// LAB 7: Your code here.
-	e->env_type = ENV_TYPE_USER;
 	e->env_tf.tf_eflags |= FL_IF;
 
 	// Clear the page fault handler until user installs one.
@@ -346,6 +344,9 @@ env_create(uint8_t *binary, enum EnvType type)
 	struct Env* env;
 	env_alloc(&env, 0);
 	env->env_type = type;
+	if (type == ENV_TYPE_FS) {
+		env->env_tf.tf_eflags |= FL_IOPL_3;
+	}
 	load_icode(env, binary);
 }
 

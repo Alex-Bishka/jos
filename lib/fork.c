@@ -56,6 +56,9 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
+	if (uvpt[pn] & PTE_SHARE) {
+		return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), uvpt[pn] & PTE_SYSCALL);
+	}
 	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
 		int r;
 		if ((r=sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U)) < 0) {
@@ -65,9 +68,8 @@ duppage(envid_t envid, unsigned pn)
 			r = sys_page_map(0, (void*) (pn*PGSIZE), 0, (void*) (pn*PGSIZE), PTE_COW | PTE_P | PTE_U);
 		}
 		return r;
-	} else {
-		return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_P | PTE_U);
 	}
+	return sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn*PGSIZE), PTE_P | PTE_U);
 }
 
 //
@@ -83,7 +85,6 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
-	// LAB 5: Your code here.
 	set_pgfault_handler(pgfault);
 	
 	envid_t envid = sys_exofork();

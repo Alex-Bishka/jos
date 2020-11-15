@@ -483,6 +483,9 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	if (!(pte = pgdir_walk(pgdir, va, 0))) {
 		return NULL;
 	}
+	if (!(*pte & PTE_P)) {
+		return NULL;
+	}
 	if (pte_store) {
 		*pte_store = pte;
 	}
@@ -506,6 +509,9 @@ page_remove(pde_t *pgdir, void *va)
 {
 	pte_t *pte;
 	struct PageInfo * pp = page_lookup(pgdir, va, &pte);
+	if (pp == 0) {
+		return;
+	}
 	page_decref(pp);
 	*pte = 0;
 	tlb_invalidate(pgdir, va);

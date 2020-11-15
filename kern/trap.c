@@ -176,9 +176,11 @@ trap_dispatch(struct Trapframe *tf)
 			lapic_eoi();
 			sched_yield();
 		case IRQ_OFFSET + IRQ_KBD:
-			panic("IRQ_KBD is unhandled");
+			kbd_intr();
+			return;
 		case IRQ_OFFSET + IRQ_SERIAL:
-			panic("IRQ_SERIAL is unhandled");
+			serial_intr();
+			return;
 		case IRQ_OFFSET + IRQ_IDE:
 			panic("IRQ_IDE is unhandled");
 		case IRQ_OFFSET + IRQ_ERROR:
@@ -192,9 +194,6 @@ trap_dispatch(struct Trapframe *tf)
 			tf->tf_regs.reg_eax = (uint32_t) syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 			return;
 	}
-
-	// Handle keyboard and serial interrupts.
-	// LAB 5: Your code here.
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);

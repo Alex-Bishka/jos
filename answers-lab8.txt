@@ -1,0 +1,3 @@
+Nothing else should be necessary as we are already restoring everything
+whenever we switch between environments. This will include the eflags register
+with the IOPL priviliges that we just changed for the file system environment.
