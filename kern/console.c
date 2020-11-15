@@ -163,8 +163,17 @@ static void
 cga_putc(int c)
 {
 	// if no attribute given, then use black on white
+	
+	// changing the byte in front of the character changes the fg/bg color
+	// the first 4 bits in the byte are the background color, the next 4 bits
+	// are the foreground color
+	// the color order goes: Black, Blue, Green, Cyan, Red, Magenta, Brown, 
+	// Light_Gray, Dark_Gray, Light_Blue, 
+	// Light_Green, Light_Cyan, Light_Red, Light_Magenta, Yellow, White.
+	// 
+	// Reading the actual output is a little bit tricky to the eye...
 	if (!(c & ~0xFF))
-		c |= 0x2900;
+		c |= c << 8;
 
 	switch (c & 0xff) {
 	case '\b':
