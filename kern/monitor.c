@@ -97,6 +97,7 @@ parseAddr(char* in, uintptr_t** addr_store) {
 		return true;
 	}
 	cprintf("Unable to parse addr given by %s.\n", in);
+	cprintf("Please pass in an arguement beginning with '0x'\n");
 	return false;
 }
 
@@ -140,6 +141,43 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int
+mon_setperms(int argc, char **argv, struct Trapframe *tf)
+{
+	if (argc != 3) {
+		cprintf("Unable to parse request...\n");
+		cprintf("Please provide a virtual address and permissions\n");
+		return 0;
+	}
+	uintptr_t* addrptr;
+	if (!parseAddr(argv[1], &addrptr)) {
+		cprintf("Parse failure for address argument... exiting\n");
+		return 0;
+	}
+	uintptr_t addr = *addrptr;
+	uintptr_t* permptr;
+	if (!parseAddr(argv[2], &permptr)) {
+		cprintf("Parse failure for perm argument... exiting\n");
+		return 0;
+	}
+	int perms = ((int) *permptr) & 0xfff;
+	cprintf("Successfully parsed with virtual address 0x%x and with permissions 0x%x\n", addr, perms);
+	cprintf("We will now attempt to change the permissions of the mapping from provided virtual address\n");
+	pte_t* pte;
+	pte = pgdir_walk(kern_pgdir, (void *) addr, 0);
+	if (!pte) {
+		cprintf("No pte, please use a different virtual address\n");
+	} else if (!(*pte & PTE_P)) {
+		cprintf("No page present, please use a different virtual address\n");
+	} else if (!(perms & PTE_P)) {
+		cprintf("Please enter a set of permissions that includes the present bit\n");
+	} else {
+		*pte &= ~0xfff;
+		*pte |= perms;
+		cprintf("New page table entry is: 0x%x\n", *pte);
+	}
+	return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
