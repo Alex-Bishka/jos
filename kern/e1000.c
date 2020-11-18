@@ -12,5 +12,6 @@ e1000_attach(struct pci_func *pcif)
 	pci_func_enable(pcif);
 	e1000_base = mmio_map_region(pcif->reg_base[0], pcif->reg_size[0]);
 	cprintf("Device status register value is: %x\n", E1000_ADDR(E1000_STATUS));
+	struct PageInfo * pp = page_alloc(ALLOC_ZERO);
 	return 1;
 }
