@@ -375,6 +375,14 @@ sys_time_msec(void)
 	return time_msec();
 }
 
+// Send a trasmit packet
+// If size
+static int
+sys_transmit_packet(void* a1, size_t a2)
+{
+	return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -415,6 +423,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_ipc_recv((void*) a1);
 		case SYS_time_msec:
 			return sys_time_msec();
+		/*case SYS_transmit_packet:
+			return sys_transmit_packet((void*) a1, a2);*/
 		default:
 			return -E_INVAL;
 	}

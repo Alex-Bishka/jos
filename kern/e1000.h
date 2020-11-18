@@ -15,4 +15,18 @@ int e1000_attach(struct pci_func *pcif);
 #define E1000_TCTL_EN     0x00000002    /* enable tx */
 #define E1000_TCTL_PSP    0x00000008    /* pad short packets */
 
+#define E1000_TXD_STAT_DD    0x00000001 /* Descriptor Done */
+
+
+struct tx_desc
+{
+	uint64_t addr;
+	uint16_t length;
+	uint8_t cso;
+	uint8_t cmd;
+	uint8_t status;
+	uint8_t css;
+	uint16_t special;
+};
+
 #endif  // SOL >= 6
