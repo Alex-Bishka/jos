@@ -6,6 +6,8 @@
 int e1000_attach(struct pci_func *pcif);
 int transmit_packet(char* buf, size_t size);
 
+#define MAX_PACKET_SIZE	0x1518	/* Max size of TX packet */
+
 #define E1000_STATUS   0x00008  /* Device Status - RO */
 #define E1000_TCTL 	0x00400	/* TX Control - RW */
 #define E1000_TIPG     0x00410  /* TX Inter-packet gap -RW */

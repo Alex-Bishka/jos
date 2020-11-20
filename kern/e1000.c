@@ -7,7 +7,6 @@ struct tx_desc* tx_desc_arr;
 char* send_bufptr[64];
 #define E1000_ADDR(offset) (*(volatile uint32_t*) (e1000_base + offset))
 #define NUM_DESC 64
-#define MAX_PACKET_SIZE 1518
 
 
 // todo:
@@ -40,27 +39,28 @@ e1000_attach(struct pci_func *pcif)
 		void* pgaddr = page2kva(pg);
 		send_bufptr[i] = pgaddr;
 		send_bufptr[i+1] = pgaddr + PGSIZE/2;
-		tx_desc_arr[i].addr = (uint64_t) ((uint32_t) send_bufptr[i]);
-		tx_desc_arr[i].cmd =
-		tx_desc_arr[i].cso = 0 
-		tx_desc_arr[i+1].addr = (uint64_t) ((uint32_t) send_bufptr[i+1]);
+		tx_desc_arr[i].addr = (uint64_t) ((uint32_t) PADDR(send_bufptr[i]));
+		tx_desc_arr[i].cmd |= (1 << 3) | 1; // RS bit and EOP bit
+		tx_desc_arr[i].cso = 0; 
+		tx_desc_arr[i].status |= 1; // DD bit
+		tx_desc_arr[i+1].addr = (uint64_t) ((uint32_t) PADDR(send_bufptr[i+1]));
+		tx_desc_arr[i+1].cmd |= (1 << 3) | 1; // RS bit and EOP bit
+		tx_desc_arr[i+1].cso = 0; 
+		tx_desc_arr[i+1].status |= 1; // DD bit
 	}
-	transmit_packet("HelloWorldHelloWorldHelloWorldHelloWorldHelloWorld", 50);
 	return 1;
 } 
 
 int
 transmit_packet(char* buf, size_t size) {
-	//struct tx_desc* next_desc = ((volatile struct tx_desc*) e1000_base + E1000_TDT*sizeof(struct tx_desc));
-	struct tx_desc* next_desc = &tx_desc_arr[E1000_ADDR(E1000_TDT)]; 
-	if (!(next_desc->status & E1000_TXD_STAT_DD)) {
-		// cprintf("hello");
-		//return -1; //some other error myabe?
+	struct tx_desc* desc = &tx_desc_arr[E1000_ADDR(E1000_TDT)]; 
+	if (!(desc->status & E1000_TXD_STAT_DD)) {
+		return -1; // TODO: set to some other error code
 	}
 	assert(size <= MAX_PACKET_SIZE);
 	memmove(send_bufptr[E1000_ADDR(E1000_TDT)], buf, size);
-	next_desc->length = size; // may need to check if size is at least 48 bytes	
-	cprintf("this is our desc: %x\n", tx_desc_arr[E1000_ADDR(E1000_TDT)].length);
+	desc->length = size; // may need to check if size is at least 48 bytes	
+	desc->status &= ~1;
 	E1000_ADDR(E1000_TDT) = (E1000_ADDR(E1000_TDT) + 1) % NUM_DESC;
 	return 0;
 }
