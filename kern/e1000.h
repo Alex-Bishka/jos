@@ -45,6 +45,8 @@ int transmit_packet(char* buf, size_t size);
 #define E1000_RCTL_SZ_2048        0x00000000    /* rx buffer size 2048 */
 #define E1000_RCTL_SECRC          0x04000000    /* Strip Ethernet CRC */
 
+#define E1000_EERD     0x00014  /* EEPROM Read - RW */
+
 
 struct tx_desc
 {

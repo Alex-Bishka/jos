@@ -55,8 +55,19 @@ e1000_attach(struct pci_func *pcif)
 	rx_desc_arr = (struct rx_desc*) page2kva(pp_rx);
 	E1000_ADDR(E1000_MTA) = 0;
 	// E1000_ADDR(E1000_IMS) |= E1000_IMS_LSC | E1000_IMS_RXSEQ | E1000_IMS_RXDMT0 | E1000_IMS_RXO | E1000_IMS_RXT0; 
-	E1000_ADDR(E1000_RAL) = MAC_ADDR_LOW;
-	E1000_ADDR(E1000_RAH) = MAC_ADDR_HIGH;
+	volatile uint32_t *eeprom = &E1000_ADDR(E1000_EERD);
+	*eeprom = (0 << 8) | 1;
+	while (! (*eeprom && (1 << 4))) {}
+	uint32_t mac_addr_low = (*eeprom >> 16);
+	*eeprom = (1 << 8) | 1;
+	while (! (*eeprom && (1 << 4))) {}
+	mac_addr_low |= (*eeprom & 0xffff0000);
+	*eeprom = (2 << 8) | 1;
+	while (! (*eeprom && (1 << 4))) {}
+	uint32_t mac_addr_high = (*eeprom >> 16);
+
+	E1000_ADDR(E1000_RAL) = mac_addr_low;
+	E1000_ADDR(E1000_RAH) = mac_addr_high | 0x80000000;
 	E1000_ADDR(E1000_RDBAL) = page2pa(pp_rx);
 	E1000_ADDR(E1000_RDLEN) = 1 << 11; // each queue is size 1k 
 	E1000_ADDR(E1000_RDH) = 1; // double check this
@@ -90,4 +101,13 @@ transmit_packet(char* buf, size_t size) {
 	E1000_ADDR(E1000_TDT) = (E1000_ADDR(E1000_TDT) + 1) % NUM_TX_DESC;
 	return 0;
 }
+
+int
+receive_packet(char* buf) {
+	struct rx_desc* desc = &rx_desc_arr[E1000_ADDR(E1000_RDT + 1)]
+}
+
+
+
+
 
