@@ -377,7 +377,6 @@ sys_time_msec(void)
 }
 
 // Send a trasmit packet
-// If size
 static int
 sys_transmit_packet(void* buf, size_t size)
 {
@@ -386,6 +385,20 @@ sys_transmit_packet(void* buf, size_t size)
 		return -E_INVAL;
 	}
 	return transmit_packet(buf, size);
+}
+
+static int
+sys_receive_packet(void* buf)
+{
+	user_mem_assert(curenv, buf, 2048, PTE_P | PTE_U | PTE_W);
+	return receive_packet(buf);
+}
+
+static int
+sys_get_mac_addr(uint32_t* addr)
+{
+	user_mem_assert(curenv, addr, 6, PTE_P | PTE_U | PTE_W);
+	return get_mac_addr(addr);
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -430,6 +443,10 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_time_msec();
 		case SYS_transmit_packet:
 			return sys_transmit_packet((void*) a1, a2);
+		case SYS_receive_packet:
+			return sys_receive_packet((void*) a1);
+		case SYS_get_mac_addr:
+			return sys_get_mac_addr((uint32_t*) a1);
 		default:
 			return -E_INVAL;
 	}

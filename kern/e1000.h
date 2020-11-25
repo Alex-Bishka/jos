@@ -5,6 +5,8 @@
 
 int e1000_attach(struct pci_func *pcif);
 int transmit_packet(char* buf, size_t size);
+int receive_packet(char* buf);
+int get_mac_addr(uint32_t* addr);
 
 #define MAX_PACKET_SIZE	0x1518	/* Max size of TX packet */
 
@@ -19,6 +21,7 @@ int transmit_packet(char* buf, size_t size);
 #define E1000_TDT      0x03818  /* TX Descripotr Tail - RW */
 #define E1000_TCTL_EN     0x00000002    /* enable tx */
 #define E1000_TCTL_PSP    0x00000008    /* pad short packets */
+#define E1000_TXD_STAT_DD    0x00000001 /* Descriptor Done */
 
 // for recv
 #define E1000_MTA      0x05200  /* Multicast Table Array - RW Array */
@@ -37,8 +40,10 @@ int transmit_packet(char* buf, size_t size);
 #define E1000_RDT      0x02818  /* RX Descriptor Tail - RW */
 #define E1000_RCTL     0x00100  /* RX Control - RW */
 #define E1000_RCTL_EN             0x00000002    /* enable */
+#define E1000_RXD_STAT_DD       0x01    /* Descriptor Done */
+#define E1000_RXD_STAT_EOP      0x02    /* End of Packet */
 
-#define E1000_TXD_STAT_DD    0x00000001 /* Descriptor Done */
+
 #define E1000_RCTL_LPE            0x00000020    /* long packet enable */
 #define E1000_RCTL_LBM_MAC        0x00000040    /* MAC loopback mode */
 #define E1000_RCTL_BAM            0x00008000    /* broadcast enable */
