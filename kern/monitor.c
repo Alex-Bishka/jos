@@ -175,6 +175,7 @@ mon_setperms(int argc, char **argv, struct Trapframe *tf)
 		*pte &= ~0xfff;
 		*pte |= perms;
 		cprintf("New page table entry is: 0x%x\n", *pte);
+		tlbflush();
 	}
 	return 0;
 }
