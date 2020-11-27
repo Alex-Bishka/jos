@@ -230,7 +230,18 @@ send_file(struct http_request *req)
 	// if the file does not exist, send a 404 error using send_error
 	// if the file is a directory, send a 404 error using send_error
 	// set file_size to the size of the file
-	struct File* file;
+	extern union Fsipc fsipcbuf;
+	envid_t fsenv;
+
+	strcpy(fsipcbuf.open.req_path, req->url);
+	fsipcbuf.open.req_omode = mode;
+
+	fsenv = ipc_find_env(ENV_TYPE_FS);
+	ipc_send(fsenv, FSREQ_OPEN, &fsipcbuf, PTE_P | PTE_W | PTE_U);
+	sys_page_alloc(0, UTEMP, PTE_P | PTE_W | PTE_U);
+	fd = ipc_recv(NULL, UTEMP, NULL);
+
+
 	if ((r = file_open(req->url, &file)) < 0) {
 		panic("%e\n", r);
 	}
