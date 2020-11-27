@@ -231,6 +231,10 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			putch(ch, putdat);
 			break;
 
+		case 'g':
+			putch(va_arg(ap, int) | 2 << 8, putdat);
+			break;
+
 		// unrecognized escape sequence - just print it literally
 		default:
 			putch('%', putdat);
