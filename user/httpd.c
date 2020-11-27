@@ -1,6 +1,7 @@
 #include <inc/lib.h>
 #include <lwip/sockets.h>
 #include <lwip/inet.h>
+#include <kern/e1000.h>
 
 #include "fs/fs.h"
 
@@ -81,10 +82,12 @@ send_data(struct http_request *req, int fd)
 	// sys_page_alloc(envid_t envid, void *va, int perm);
 	// sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm);
 	// sys_transmit_packet(void* buf, size_t size);
-	char buf[1518];
-	int bytes = read(fd, buf, 1518);
-	if (write(req->sock, buf, bytes)) {
-		die("Failed to send bytes to client");
+	char buf[MAX_PACKET_SIZE];
+	int bytes;
+	while ((bytes = read(fd, buf, sizeof(buf))) > 1) {
+		if (write(req->sock, buf, bytes)) {
+			die("Failed to send bytes to client");
+		}
 	}
 	return 0;
 }
@@ -108,7 +111,6 @@ send_size(struct http_request *req, off_t size)
 static const char*
 mime_type(const char *file)
 {
-	//TODO: for now only a single mime type
 	return "text/html";
 }
 
@@ -222,6 +224,7 @@ send_error(struct http_request *req, int code)
 static int
 send_file(struct http_request *req)
 {
+	cprintf("I'm here in send file\n");
 	int r;
 	off_t file_size = -1;
 	int fd;
@@ -230,28 +233,22 @@ send_file(struct http_request *req)
 	// if the file does not exist, send a 404 error using send_error
 	// if the file is a directory, send a 404 error using send_error
 	// set file_size to the size of the file
+	
 	extern union Fsipc fsipcbuf;
 	envid_t fsenv;
 
-	strcpy(fsipcbuf.open.req_path, req->url);
-	fsipcbuf.open.req_omode = mode;
-
-	fsenv = ipc_find_env(ENV_TYPE_FS);
-	ipc_send(fsenv, FSREQ_OPEN, &fsipcbuf, PTE_P | PTE_W | PTE_U);
-	sys_page_alloc(0, UTEMP, PTE_P | PTE_W | PTE_U);
-	fd = ipc_recv(NULL, UTEMP, NULL);
-
-
-	if ((r = file_open(req->url, &file)) < 0) {
-		panic("%e\n", r);
-	}
-	if (file->f_type) {
-		send_error(req, 404);
-	}
 	if ((fd = open(req->url, O_RDONLY)) < 0) {
 		send_error(req, 404);
 	}
-	file_size = file->f_size;
+	struct Stat stat;
+	if ((r = fstat(fd, &stat)) < 0){
+		goto end;
+	}
+	file_size = stat.st_size;
+
+	if (stat.st_isdir) {
+		send_error(req, 404);
+	}
 
 	if ((r = send_header(req, 200)) < 0)
 		goto end;

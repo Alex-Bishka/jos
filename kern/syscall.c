@@ -380,6 +380,7 @@ sys_time_msec(void)
 static int
 sys_transmit_packet(void* buf, size_t size)
 {
+	//TODO: user_mem_check to be nice
 	user_mem_assert(curenv, buf, size, PTE_P | PTE_U);
 	if (size > MAX_PACKET_SIZE) {
 		return -E_INVAL;
@@ -390,6 +391,7 @@ sys_transmit_packet(void* buf, size_t size)
 static int
 sys_receive_packet(void* buf)
 {
+	// pass in max_size  to not overflow
 	user_mem_assert(curenv, buf, 2048, PTE_P | PTE_U | PTE_W);
 	return receive_packet(buf);
 }

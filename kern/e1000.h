@@ -8,7 +8,7 @@ int transmit_packet(char* buf, size_t size);
 int receive_packet(char* buf);
 int get_mac_addr(uint32_t* addr);
 
-#define MAX_PACKET_SIZE	0x1518	/* Max size of TX packet */
+#define MAX_PACKET_SIZE	1518	/* Max size of TX packet */
 
 // for transmit
 #define E1000_STATUS   0x00008  /* Device Status - RO */
