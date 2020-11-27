@@ -70,9 +70,9 @@ e1000_attach(struct pci_func *pcif)
 		recv_bufptr[i] = pgaddr;
 		recv_bufptr[i+1] = pgaddr + PGSIZE/2;
 		rx_desc_arr[i].addr = (uint64_t) ((uint32_t) PADDR(recv_bufptr[i]));
-		rx_desc_arr[i].status |= (1 << 1); // EOP bit
+		rx_desc_arr[i].status |= (1 << 1); // EOP and DD bit
 		rx_desc_arr[i+1].addr = (uint64_t) ((uint32_t) PADDR(recv_bufptr[i+1]));
-		rx_desc_arr[i+1].status |= (1 << 1); // EOP bit
+		rx_desc_arr[i+1].status |= (1 << 1); // EOP and DD bit
 	}
 	E1000_ADDR(E1000_RCTL) |= E1000_RCTL_EN;
 	return 1;
@@ -118,7 +118,7 @@ receive_packet(char* buf) {
 	memmove(buf, recv_bufptr[rdt], desc->length);
 	desc->status &= ~E1000_RXD_STAT_DD;
 	E1000_ADDR(E1000_RDT) = rdt;
-	return 0;
+	return desc->length;
 }
 
 
