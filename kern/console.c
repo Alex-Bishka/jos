@@ -174,8 +174,8 @@ cga_putc(int c)
 	// Reading the actual output is a little bit tricky to the eye...
 	// take a look at color_challenge_screenshot.png in our git repo (if you dare)
 	if (!(c & ~0xFF))
-		c |= c << 8;
-
+		c |= 0x0700;
+		// c |= c << 8; // uncomment this if you want the text to be illegible
 
 	switch (c & 0xff) {
 	case '\b':
