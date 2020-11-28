@@ -1,0 +1,105 @@
+We decided to take the lottery approach to enhancing the sched function. The
+first part of this process was to add a priority to each environment, so we gave
+them a new field called priority. We decided to set this to a default of 10.
+We then gave the user a syscall called sys_set_priority, which allows the user
+to set a new priority value in the env struct. We decided that this new value
+can not exceed 100 or be lower than 1. These decisions for the default, min,
+and max value for a priority were chosen arbitrarily, but we found them
+acceptable for the random number generator we used. This is because if the
+priority of an env is too high or if we have too many envs (i.e. the sum of
+all the priorities is too high), it could be possible that the envs toward the end
+of the env array may not run. As for the random function, we pulled the
+implementation off of stack overflow. Furthermore, it is only a psuedo-random
+function, but this is fine because even though it is deterministic it still results 
+in the desired behavior. 
+
+Our output is listed below, and as you can see, our envs are running
+pseudo-randomly. Furthermore, our envs with higher numbers (they have a higher
+priority) run more frequently compared to envs with lower numbers (they have a
+lower priority). You can checkout user/priority.c to see more details of the
+test program.
+
+Output:
+make[1]: Entering directory '/mnt/home/abishka/cs134/lab'
+make[1]: Leaving directory '/mnt/home/abishka/cs134/lab'
+qemu-system-i386 -nographic -drive file=obj/kern/kernel.img,index=0,media=disk,format=raw -serial mon:stdio -gdb tcp::29833 -D qemu.log -smp 1 
+6828 decimal is 15254 octal!
+Physical memory: 131072K available, base = 640K, extended = 130432K
+check_page_free_list() succeeded!
+check_page_alloc() succeeded!
+check_page() succeeded!
+check_kern_pgdir() succeeded!
+check_page_free_list() succeeded!
+check_page_installed_pgdir() succeeded!
+SMP: CPU 0 found 1 CPU(s)
+enabled interrupts: 1 2
+[00000000] new env 00001000
+Forked child 0 with priority 1
+[00001000] new env 00001001
+Forked child 1 with priority 2
+[00001000] new env 00001002
+Forked child 2 with priority 4
+[00001000] new env 00001003
+Forked child 3 with priority 8
+[00001000] new env 00001004
+Forked child 4 with priority 16
+[00001000] new env 00001005
+Forked child 5 with priority 32
+[00001000] new env 00001006
+Forked child 6 with priority 64
+[00001000] new env 00001007
+[00001000] exiting gracefully
+[00001000] free env 00001000
+Loop 0 for child 1
+Loop 0 for child 4
+Loop 0 for child 6
+Loop 0 for child 3
+Loop 1 for child 4
+Loop 1 for child 3
+Loop 2 for child 4
+Loop 1 for child 6
+Loop 0 for child 5
+Loop 1 for child 5
+Loop 2 for child 6
+Loop 2 for child 5
+Loop 3 for child 6
+Loop 3 for child 5
+Loop 1 for child 1
+Loop 4 for child 5
+Loop 4 for child 6
+[00001006] exiting gracefully
+[00001006] free env 00001006
+Loop 0 for child 2
+[00001007] exiting gracefully
+[00001007] free env 00001007
+Loop 1 for child 2
+Loop 2 for child 3
+Loop 0 for child 0
+Loop 3 for child 4
+Loop 2 for child 2
+Loop 4 for child 4
+Loop 3 for child 3
+Loop 1 for child 0
+[00001005] exiting gracefully
+[00001005] free env 00001005
+Loop 4 for child 3
+Loop 3 for child 2
+[00001004] exiting gracefully
+[00001004] free env 00001004
+Loop 2 for child 0
+Loop 4 for child 2
+Loop 2 for child 1
+[00001003] exiting gracefully
+[00001003] free env 00001003
+Loop 3 for child 0
+Loop 3 for child 1
+Loop 4 for child 0
+Loop 4 for child 1
+[00001001] exiting gracefully
+[00001001] free env 00001001
+[00001002] exiting gracefully
+[00001002] free env 00001002
+No runnable environments in the system!
+Welcome to the JOS kernel monitor!
+Type 'help' for a list of commands.
+K> 
