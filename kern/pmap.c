@@ -84,6 +84,8 @@ static void check_page_installed_pgdir(void);
 // If we're out of memory, boot_alloc should panic.
 // This function may ONLY be used during initialization,
 // before the page_free_list list has been set up.
+// Note that when this function is called, we are still using entry_pgdir,
+// which only maps the first 4MB of physical memory.
 static void *
 boot_alloc(uint32_t n)
 {
@@ -481,6 +483,9 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	if (!(pte = pgdir_walk(pgdir, va, 0))) {
 		return NULL;
 	}
+	if (!(*pte & PTE_P)) {
+		return NULL;
+	}
 	if (pte_store) {
 		*pte_store = pte;
 	}
@@ -504,6 +509,9 @@ page_remove(pde_t *pgdir, void *va)
 {
 	pte_t *pte;
 	struct PageInfo * pp = page_lookup(pgdir, va, &pte);
+	if (pp == 0) {
+		return;
+	}
 	page_decref(pp);
 	*pte = 0;
 	tlb_invalidate(pgdir, va);
