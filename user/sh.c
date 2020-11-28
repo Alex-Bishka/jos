@@ -226,6 +226,21 @@ _gettoken(char *s, char **p1, char **p2)
 			cprintf("TOK %c\n", t);
 		return t;
 	}
+	// Check to see if token starts with '"'
+	// If it does, then continue until we see a second '"'
+	// If there is no second '"' then we just keep reading
+	// as if it is part of the same word
+	// Otherwise, if we hit a second '"' then return the word
+	if (strchr("\"", *s)) {
+		s++;
+		*p1 = s;
+		while (*s && !strchr("\"", *s)) {
+			s++;
+		}
+		*s++ = 0;
+		*p2 = s;
+		return 'w';
+	}
 	*p1 = s;
 	while (*s && !strchr(WHITESPACE SYMBOLS, *s))
 		s++;
