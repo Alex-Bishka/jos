@@ -5,18 +5,16 @@
 static volatile char* e1000_base;
 struct tx_desc* tx_desc_arr;
 struct rx_desc* rx_desc_arr;
-char* send_bufptr[64];
-char* recv_bufptr[128];
 #define E1000_ADDR(offset) (*(volatile uint32_t*) (e1000_base + offset))
 #define NUM_TX_DESC 64
 #define NUM_RX_DESC 128
+char* send_bufptr[NUM_TX_DESC];
+char* recv_bufptr[NUM_RX_DESC];
 
 
-// todo:
-// 1) RAL/RAH?
-// 2) What should RDT/RDH be set to? 
-// 3) RDMTS?
-// 4) MO?
+// forward declarations
+static void tx_init();
+static void rx_init();
 
 int
 e1000_attach(struct pci_func *pcif)
@@ -24,6 +22,68 @@ e1000_attach(struct pci_func *pcif)
 	pci_func_enable(pcif);
 	e1000_base = mmio_map_region(pcif->reg_base[0], pcif->reg_size[0]);
 	cprintf("Device status register value is: %x\n", E1000_ADDR(E1000_STATUS));
+
+	tx_init();
+
+	rx_init();
+
+	return 1;
+}
+
+int
+transmit_packet(char* buf, size_t size) {
+	struct tx_desc* desc = &tx_desc_arr[E1000_ADDR(E1000_TDT)];
+	if (!(desc->status & E1000_TXD_STAT_DD)) {
+		return -1;
+	}
+	assert(size <= MAX_PACKET_SIZE);
+	memmove(send_bufptr[E1000_ADDR(E1000_TDT)], buf, size);
+	desc->length = size;
+	desc->status &= ~E1000_TXD_STAT_DD;
+	E1000_ADDR(E1000_TDT) = (E1000_ADDR(E1000_TDT) + 1) % NUM_TX_DESC;
+	return 0;
+}
+
+int
+receive_packet(char* buf, size_t size) {
+	int rdt = (E1000_ADDR(E1000_RDT) + 1) % NUM_RX_DESC;
+	struct rx_desc* desc = &rx_desc_arr[rdt];
+	if (!(desc->status & E1000_RXD_STAT_DD)) {
+		return -1;
+	}
+	assert(desc->status & E1000_RXD_STAT_EOP);
+	if (size > desc->length) {
+		size = desc->length;
+	}
+	memmove(buf, recv_bufptr[rdt], size);
+	desc->status &= ~E1000_RXD_STAT_DD;
+	E1000_ADDR(E1000_RDT) = rdt;
+	return size;
+}
+
+void
+get_mac_addr(uint32_t* addr) {
+	volatile uint32_t *eeprom = &E1000_ADDR(E1000_EERD);
+
+	// first 2 bytes of Mac address
+	*eeprom = (0 << 8) | 1;
+	while (!(*eeprom && (1 << 4))) {} // Wait until it is done reading
+	addr[0] = (*eeprom >> 16);
+
+	// second 2 bytes of Mac address
+	*eeprom = (1 << 8) | 1;
+	while (!(*eeprom && (1 << 4))) {}
+	addr[0] |= (*eeprom & 0xffff0000); // Don't mess with the bits we just set
+
+	// third 2 bytes of Mac address
+	*eeprom = (2 << 8) | 1;
+	while (!(*eeprom && (1 << 4))) {}
+	addr[1] = (*eeprom >> 16);
+}
+
+static void
+tx_init()
+{
 	struct PageInfo* pp = page_alloc(ALLOC_ZERO);
 	tx_desc_arr = (struct tx_desc*) page2kva(pp);
 	E1000_ADDR(E1000_TDBAL) = page2pa(pp);
@@ -33,7 +93,7 @@ e1000_attach(struct pci_func *pcif)
 	E1000_ADDR(E1000_TCTL) |= E1000_TCTL_EN | E1000_TCTL_PSP;
 	E1000_ADDR(E1000_TCTL) |= 0x10 << 4; // this is to set Collision Threshold to desired value of 10h
 	E1000_ADDR(E1000_TCTL) |= 0x40 << 12; // this is to set Collision Distance to expected value of 40h
-	E1000_ADDR(E1000_TIPG) |= (0x6 << 20) | (0x8 << 10) | 0xA; 
+	E1000_ADDR(E1000_TIPG) |= (0x6 << 20) | (0x8 << 10) | 0xA; // Set IPGT to 10, IPGR1 to 8, and IPGR2 to 6
 	
 	for (int i = 0; i < NUM_TX_DESC; i += 2) {
 		struct PageInfo* pg = page_alloc(ALLOC_ZERO);
@@ -49,10 +109,16 @@ e1000_attach(struct pci_func *pcif)
 		tx_desc_arr[i+1].cso = 0; 
 		tx_desc_arr[i+1].status |= 1; // DD bit
 	}
+}
+
+static void
+rx_init()
+{
 	struct PageInfo* pp_rx = page_alloc(ALLOC_ZERO);
 	rx_desc_arr = (struct rx_desc*) page2kva(pp_rx);
 	E1000_ADDR(E1000_MTA) = 0;
 	
+
 	uint32_t mac_addr[2];
 	get_mac_addr(mac_addr);
 	
@@ -75,53 +141,4 @@ e1000_attach(struct pci_func *pcif)
 		rx_desc_arr[i+1].status |= (1 << 1); // EOP and DD bit
 	}
 	E1000_ADDR(E1000_RCTL) |= E1000_RCTL_EN;
-	return 1;
-} 
-
-int
-get_mac_addr(uint32_t* addr) {
-	volatile uint32_t *eeprom = &E1000_ADDR(E1000_EERD);
-	*eeprom = (0 << 8) | 1;
-	while (! (*eeprom && (1 << 4))) {}
-	addr[0] = (*eeprom >> 16);
-	*eeprom = (1 << 8) | 1;
-	while (! (*eeprom && (1 << 4))) {}
-	addr[0] |= (*eeprom & 0xffff0000);
-	*eeprom = (2 << 8) | 1;
-	while (! (*eeprom && (1 << 4))) {}
-	addr[1] = (*eeprom >> 16);
-	return 0;
 }
-
-int
-transmit_packet(char* buf, size_t size) {
-	struct tx_desc* desc = &tx_desc_arr[E1000_ADDR(E1000_TDT)]; 
-	if (!(desc->status & E1000_TXD_STAT_DD)) {
-		return -1; // TODO: set to some other error code
-	}
-	assert(size <= MAX_PACKET_SIZE);
-	memmove(send_bufptr[E1000_ADDR(E1000_TDT)], buf, size);
-	desc->length = size; // may need to check if size is at least 48 bytes	
-	desc->status &= ~E1000_TXD_STAT_DD;
-	E1000_ADDR(E1000_TDT) = (E1000_ADDR(E1000_TDT) + 1) % NUM_TX_DESC;
-	return 0;
-}
-
-int
-receive_packet(char* buf) {
-	int rdt = (E1000_ADDR(E1000_RDT) + 1) % NUM_RX_DESC;
-	struct rx_desc* desc = &rx_desc_arr[rdt];
-	if (!(desc->status & E1000_RXD_STAT_DD)) {
-		return -1;
-	}
-	assert(desc->status & E1000_RXD_STAT_EOP);
-	memmove(buf, recv_bufptr[rdt], desc->length);
-	desc->status &= ~E1000_RXD_STAT_DD;
-	E1000_ADDR(E1000_RDT) = rdt;
-	return desc->length;
-}
-
-
-
-
-

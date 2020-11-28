@@ -380,8 +380,9 @@ sys_time_msec(void)
 static int
 sys_transmit_packet(void* buf, size_t size)
 {
-	//TODO: user_mem_check to be nice
-	user_mem_assert(curenv, buf, size, PTE_P | PTE_U);
+	if (user_mem_check(curenv, buf, size, PTE_P | PTE_U) < 0) {
+		return -E_FAULT;
+	}
 	if (size > MAX_PACKET_SIZE) {
 		return -E_INVAL;
 	}
@@ -389,18 +390,22 @@ sys_transmit_packet(void* buf, size_t size)
 }
 
 static int
-sys_receive_packet(void* buf)
+sys_receive_packet(void* buf, size_t size)
 {
-	// pass in max_size  to not overflow
-	user_mem_assert(curenv, buf, 2048, PTE_P | PTE_U | PTE_W);
-	return receive_packet(buf);
+	if (user_mem_check(curenv, buf, size, PTE_P | PTE_W | PTE_U) < 0) {
+		return -E_FAULT;
+	}
+	return receive_packet(buf, size);
 }
 
 static int
 sys_get_mac_addr(uint32_t* addr)
 {
-	user_mem_assert(curenv, addr, 6, PTE_P | PTE_U | PTE_W);
-	return get_mac_addr(addr);
+	if (user_mem_check(curenv, addr, MAC_ADDR_SIZE, PTE_P | PTE_W | PTE_U) < 0) {
+		return -E_FAULT;
+	}
+	get_mac_addr(addr);
+	return 0;
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -446,7 +451,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_transmit_packet:
 			return sys_transmit_packet((void*) a1, a2);
 		case SYS_receive_packet:
-			return sys_receive_packet((void*) a1);
+			return sys_receive_packet((void*) a1, a2);
 		case SYS_get_mac_addr:
 			return sys_get_mac_addr((uint32_t*) a1);
 		default:

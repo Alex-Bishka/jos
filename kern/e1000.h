@@ -5,10 +5,11 @@
 
 int e1000_attach(struct pci_func *pcif);
 int transmit_packet(char* buf, size_t size);
-int receive_packet(char* buf);
-int get_mac_addr(uint32_t* addr);
+int receive_packet(char* buf, size_t size);
+void get_mac_addr(uint32_t* addr);
 
 #define MAX_PACKET_SIZE	1518	/* Max size of TX packet */
+#define MAC_ADDR_SIZE 6 	/* Size of a Mac address */
 
 // for transmit
 #define E1000_STATUS   0x00008  /* Device Status - RO */

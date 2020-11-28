@@ -23,10 +23,9 @@ input(envid_t ns_envid)
 	while (1) {
 		struct jif_pkt* packet = &(nsipcbuf.pkt);
 		packet->jp_len = 0;
-		while ((packet->jp_len = sys_receive_packet(packet->jp_data)) <= 0) {
+		while ((packet->jp_len = sys_receive_packet(packet->jp_data, PGSIZE - sizeof(packet->jp_len))) <= 0) {
 			sys_yield();
 		}
-		cprintf("packet has been recv\n");
 		assert(sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W) >= 0);
 		memmove(UTEMP, (void*) packet, sizeof(nsipcbuf));
 		int r;
@@ -34,6 +33,5 @@ input(envid_t ns_envid)
 			//cprintf("%e", r);
 			sys_yield();
 		}
-		cprintf("sent pkt\n");
 	}
 }

@@ -224,7 +224,6 @@ send_error(struct http_request *req, int code)
 static int
 send_file(struct http_request *req)
 {
-	cprintf("I'm here in send file\n");
 	int r;
 	off_t file_size = -1;
 	int fd;
