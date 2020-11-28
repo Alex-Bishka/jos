@@ -348,6 +348,15 @@ sys_ipc_recv(void *dstva)
 	sched_yield();
 }
 
+static int
+sys_set_priority(int priority) {
+	if (priority < MIN_ENV_PRIORITY || priority > MAX_ENV_PRIORITY) {
+		return -E_INVAL;
+	}
+	curenv->env_priority = priority;
+	return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -384,6 +393,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_ipc_try_send(a1, a2, (void*) a3, a4);
 		case SYS_ipc_recv:
 			return sys_ipc_recv((void*) a1);
+		case SYS_set_priority:
+			return sys_set_priority(a1);
 		default:
 			return -E_INVAL;
 	}
