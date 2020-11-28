@@ -64,6 +64,7 @@
 
 traphandlers:
 TRAPHANDLER_NOEC(DivideError, T_DIVIDE, 0);
+TRAPHANDLER_NOEC(Debug, T_DEBUG, 3);
 TRAPHANDLER_NOEC(NonMaskableInterrupt, T_NMI, 0);
 TRAPHANDLER_NOEC(Breakpoint, T_BRKPT, 3);
 TRAPHANDLER_NOEC(Overflow, T_OFLOW, 0);
