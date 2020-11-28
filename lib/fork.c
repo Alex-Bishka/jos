@@ -21,6 +21,7 @@ pgfault(struct UTrapframe *utf)
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
 	if (!(uvpt[PGNUM(addr)] & PTE_P)) {
+		cprintf("faulting at addr: %x\n", addr);
 		panic("page associated with faulting virtual addr is not present");
 	}
 	if ((!(uvpt[PGNUM(addr)] & PTE_COW))) {
@@ -85,7 +86,6 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
-	// LAB 5: Your code here.
 	set_pgfault_handler(pgfault);
 	
 	envid_t envid = sys_exofork();

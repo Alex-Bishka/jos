@@ -44,8 +44,6 @@ bc_pgfault(struct UTrapframe *utf)
 
 	// Allocate a page in the disk map region, read the contents
 	// of the block from the disk into that page.
-	// Hint: first round addr to page boundary. fs/ide.c has code to read
-	// the disk.
 	if ((r = sys_page_alloc(thisenv->env_id, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
 		panic("in bc_pgfault, sys_page_alloc: %e", r);
 
@@ -68,9 +66,6 @@ bc_pgfault(struct UTrapframe *utf)
 // necessary, then clear the PTE_D bit using sys_page_map.
 // If the block is not in the block cache or is not dirty, does
 // nothing.
-// Hint: Use va_is_mapped, va_is_dirty, and ide_write.
-// Hint: Use the PTE_SYSCALL constant when calling sys_page_map.
-// Hint: Don't forget to round addr down.
 void
 flush_block(void *addr)
 {

@@ -1,6 +1,7 @@
 #include <inc/lib.h>
 #include <lwip/sockets.h>
 #include <lwip/inet.h>
+#include <kern/e1000.h>
 
 #define PORT 80
 #define VERSION "0.1"
@@ -76,8 +77,14 @@ send_header(struct http_request *req, int code)
 static int
 send_data(struct http_request *req, int fd)
 {
-	// LAB 6: Your code here.
-	panic("send_data not implemented");
+	char buf[MAX_PACKET_SIZE];
+	int bytes;
+	while ((bytes = read(fd, buf, sizeof(buf))) > 1) {
+		if (write(req->sock, buf, bytes)) {
+			die("Failed to send bytes to client");
+		}
+	}
+	return 0;
 }
 
 static int
@@ -99,7 +106,6 @@ send_size(struct http_request *req, off_t size)
 static const char*
 mime_type(const char *file)
 {
-	//TODO: for now only a single mime type
 	return "text/html";
 }
 
@@ -217,13 +223,18 @@ send_file(struct http_request *req)
 	off_t file_size = -1;
 	int fd;
 
-	// open the requested url for reading
-	// if the file does not exist, send a 404 error using send_error
-	// if the file is a directory, send a 404 error using send_error
-	// set file_size to the size of the file
+	if ((fd = open(req->url, O_RDONLY)) < 0) {
+		send_error(req, 404);
+	}
+	struct Stat stat;
+	if ((r = fstat(fd, &stat)) < 0){
+		goto end;
+	}
+	file_size = stat.st_size;
 
-	// LAB 6: Your code here.
-	panic("send_file not implemented");
+	if (stat.st_isdir) {
+		send_error(req, 404);
+	}
 
 	if ((r = send_header(req, 200)) < 0)
 		goto end;

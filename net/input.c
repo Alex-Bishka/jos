@@ -7,10 +7,17 @@ input(envid_t ns_envid)
 {
 	binaryname = "ns_input";
 
-	// LAB 6: Your code here:
-	// 	- read a packet from the device driver
-	//	- send it to the network server
-	// Hint: When you IPC a page to the network server, it will be
-	// reading from it for a while, so don't immediately receive
-	// another packet in to the same physical page.
+	while (1) {
+		struct jif_pkt* packet = &(nsipcbuf.pkt);
+		packet->jp_len = 0;
+		while ((packet->jp_len = sys_receive_packet(packet->jp_data, PGSIZE - sizeof(packet->jp_len))) <= 0) {
+			sys_yield();
+		}
+		assert(sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W) >= 0);
+		memmove(UTEMP, (void*) packet, sizeof(nsipcbuf));
+		int r;
+		while ((r = sys_ipc_try_send(ns_envid, NSREQ_INPUT, UTEMP, PTE_P | PTE_U | PTE_W)) == -E_IPC_NOT_RECV) {
+			sys_yield();
+		}
+	}
 }
