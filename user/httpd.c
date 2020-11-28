@@ -3,8 +3,6 @@
 #include <lwip/inet.h>
 #include <kern/e1000.h>
 
-#include "fs/fs.h"
-
 #define PORT 80
 #define VERSION "0.1"
 #define HTTP_VERSION "1.0"
@@ -79,9 +77,6 @@ send_header(struct http_request *req, int code)
 static int
 send_data(struct http_request *req, int fd)
 {
-	// sys_page_alloc(envid_t envid, void *va, int perm);
-	// sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm);
-	// sys_transmit_packet(void* buf, size_t size);
 	char buf[MAX_PACKET_SIZE];
 	int bytes;
 	while ((bytes = read(fd, buf, sizeof(buf))) > 1) {
@@ -227,14 +222,6 @@ send_file(struct http_request *req)
 	int r;
 	off_t file_size = -1;
 	int fd;
-
-	// open the requested url for reading
-	// if the file does not exist, send a 404 error using send_error
-	// if the file is a directory, send a 404 error using send_error
-	// set file_size to the size of the file
-	
-	extern union Fsipc fsipcbuf;
-	envid_t fsenv;
 
 	if ((fd = open(req->url, O_RDONLY)) < 0) {
 		send_error(req, 404);

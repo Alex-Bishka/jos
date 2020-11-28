@@ -1,0 +1,12 @@
+Questions:
+
+1) If the transmit ring was not full, then we grab the packet from the user's
+buffer and return 0. If the transmit ring is rull, then we just return -1, so
+that the user knows to try again.
+
+2) If the receive queue is empty and a user environment requests a packet, we
+turn them away with a -1 again.
+
+3) It says "This file came from JOS", with a marquee saying "Cheesy web page!"
+
+4) It took about 12 hours maybe? We're also not done yet lol.

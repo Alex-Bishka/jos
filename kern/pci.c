@@ -24,7 +24,7 @@ struct pci_driver {
 
 // pci_attach_class matches the class and subclass of a PCI device
 struct pci_driver pci_attach_class[] = {
-	{ PCI_CLASS_BRIDGE, PCI_SUBCLASS_BRIDGE_PCI, &e1000_attach },
+	{ PCI_CLASS_BRIDGE, PCI_SUBCLASS_BRIDGE_PCI, &pci_bridge_attach },
 	{ 0, 0, 0 },
 };
 
